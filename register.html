@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Registro · Natillera Web3</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌱</text></svg>" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/animations.css" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            "monad-bg": "#0a0a0f",
+            "monad-card": "#13131a",
+            "monad-accent": "#836ef9",
+            "monad-accent2": "#00d4ff",
+            "monad-green": "#00e676",
+          },
+        },
+      },
+    };
+  </script>
+</head>
+<body class="bg-monad-bg min-h-screen text-white font-sans">
+
+  <!-- Background orbs -->
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+
+  <!-- Loader -->
+  <div id="loader" class="loader-overlay hidden">
+    <div class="loader-inner">
+      <div class="loader-spinner"></div>
+      <p id="loader-text" class="text-white/80 text-sm mt-4">Procesando...</p>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2"></div>
+
+  <!-- Navbar -->
+  <nav class="navbar px-6 py-4 flex items-center justify-between">
+    <a href="index.html" class="flex items-center gap-2 text-white font-bold text-lg hover:opacity-80 transition-opacity">
+      <span class="text-2xl">🌱</span>
+      <span class="gradient-text">Natillera</span>
+    </a>
+    <button id="btn-connect" class="btn-primary px-4 py-2 text-sm">
+      Conectar Wallet
+    </button>
+  </nav>
+
+  <!-- Main -->
+  <main class="max-w-2xl mx-auto px-6 py-16">
+
+    <!-- Breadcrumb -->
+    <div class="flex items-center gap-2 text-sm text-zinc-500 mb-8 fade-in">
+      <a href="index.html" class="hover:text-white transition-colors">Inicio</a>
+      <span>/</span>
+      <span class="text-zinc-300">Registro</span>
+    </div>
+
+    <!-- Step indicator -->
+    <div id="steps" class="flex items-center gap-3 mb-10 fade-in delay-100">
+      <div class="step-item active" data-step="1">
+        <div class="step-circle">1</div>
+        <span class="step-label">Conectar</span>
+      </div>
+      <div class="step-line"></div>
+      <div class="step-item" data-step="2">
+        <div class="step-circle">2</div>
+        <span class="step-label">Completar datos</span>
+      </div>
+      <div class="step-line"></div>
+      <div class="step-item" data-step="3">
+        <div class="step-circle">3</div>
+        <span class="step-label">Confirmar</span>
+      </div>
+    </div>
+
+    <!-- FOUNDATION FORM -->
+    <div id="form-foundation" class="hidden">
+      <div class="text-center mb-10 fade-in">
+        <div class="w-20 h-20 rounded-3xl bg-monad-accent/10 border border-monad-accent/30 flex items-center justify-center text-4xl mx-auto mb-4">🏛️</div>
+        <h1 class="text-3xl font-bold gradient-text mb-2">Registro de Fundación</h1>
+        <p class="text-zinc-400 text-sm">Tu información quedará registrada on-chain en Monad Testnet.</p>
+        <div class="mt-3 inline-flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/30 rounded-full px-4 py-1.5 text-xs text-yellow-400">
+          <span>⏳</span> Requiere verificación manual del administrador para crear pools
+        </div>
+      </div>
+
+      <form id="foundation-form" class="card p-8 flex flex-col gap-6 fade-in delay-100">
+        <!-- Nombre -->
+        <div class="form-group">
+          <label class="form-label">Nombre de la Fundación *</label>
+          <input id="f-name" type="text" placeholder="Ej: Fundación Corazón Abierto" class="input-field" required maxlength="100" />
+          <p class="form-hint">Nombre legal completo de la organización.</p>
+        </div>
+
+        <!-- NIT -->
+        <div class="form-group">
+          <label class="form-label">NIT *</label>
+          <input id="f-nit" type="text" placeholder="Ej: 900.123.456-7" class="input-field" required maxlength="20" />
+          <p class="form-hint">Número de Identificación Tributaria de la organización.</p>
+        </div>
+
+        <!-- Cuenta bancaria -->
+        <div class="form-group">
+          <label class="form-label">Número de Cuenta Bancaria *</label>
+          <div class="flex gap-3">
+            <select id="f-bank-type" class="input-field w-40 flex-shrink-0">
+              <option value="ahorros">Ahorros</option>
+              <option value="corriente">Corriente</option>
+            </select>
+            <input id="f-bank" type="text" placeholder="Ej: 1234567890" class="input-field flex-1" required maxlength="30" />
+          </div>
+          <p class="form-hint">Cuenta donde recibirás las donaciones. Se almacena on-chain cifrada.</p>
+        </div>
+
+        <!-- Banco -->
+        <div class="form-group">
+          <label class="form-label">Entidad Bancaria *</label>
+          <select id="f-bank-name" class="input-field">
+            <option value="">Selecciona tu banco</option>
+            <option>Bancolombia</option>
+            <option>Davivienda</option>
+            <option>BBVA</option>
+            <option>Banco de Bogotá</option>
+            <option>Banco Popular</option>
+            <option>Nequi</option>
+            <option>Daviplata</option>
+            <option>Otro</option>
+          </select>
+        </div>
+
+        <!-- Descripción -->
+        <div class="form-group">
+          <label class="form-label">Descripción *</label>
+          <textarea id="f-desc" rows="3" placeholder="¿A qué se dedica tu fundación? ¿Cuál es su misión?" class="input-field resize-none" required maxlength="500"></textarea>
+          <div class="flex justify-between mt-1">
+            <p class="form-hint">Mínimo 20 caracteres.</p>
+            <span id="f-desc-count" class="text-xs text-zinc-600">0/500</span>
+          </div>
+        </div>
+
+        <!-- Imagen / IPFS (opcional) -->
+        <div class="form-group">
+          <label class="form-label">Logo / Imagen (IPFS hash — opcional)</label>
+          <input id="f-ipfs" type="text" placeholder="Qm... o ipfs://..." class="input-field" maxlength="100" />
+          <p class="form-hint">Hash IPFS de tu imagen de perfil. Puedes subirla en <a href="https://pinata.cloud" target="_blank" class="text-monad-accent hover:underline">Pinata</a> gratis.</p>
+        </div>
+
+        <!-- Wallet info -->
+        <div class="bg-monad-accent/5 border border-monad-accent/20 rounded-xl p-4">
+          <p class="text-xs text-zinc-400 mb-1">Wallet conectada (registrada on-chain)</p>
+          <p id="f-wallet" class="text-sm font-mono text-monad-accent">—</p>
+        </div>
+
+        <!-- Submit -->
+        <button type="submit" class="btn-primary py-4 text-base font-semibold mt-2">
+          <span>🏛️ Registrar Fundación</span>
+        </button>
+
+        <p class="text-xs text-zinc-600 text-center">
+          Al registrarte, firmarás una transacción on-chain. Asegúrate de tener MON de testnet.
+          <a href="https://faucet.monad.xyz" target="_blank" class="text-monad-accent hover:underline ml-1">Obtener MON →</a>
+        </p>
+      </form>
+    </div>
+
+    <!-- INDIVIDUAL FORM -->
+    <div id="form-individual" class="hidden">
+      <div class="text-center mb-10 fade-in">
+        <div class="w-20 h-20 rounded-3xl bg-monad-accent2/10 border border-monad-accent2/30 flex items-center justify-center text-4xl mx-auto mb-4">🤝</div>
+        <h1 class="text-3xl font-bold gradient-text mb-2">Registro Personal</h1>
+        <p class="text-zinc-400 text-sm">Crea pools privadas y recauda con tu comunidad.</p>
+        <div class="mt-3 inline-flex items-center gap-2 bg-monad-accent2/10 border border-monad-accent2/30 rounded-full px-4 py-1.5 text-xs text-monad-accent2">
+          <span>⚡</span> Acceso inmediato — sin verificación requerida
+        </div>
+      </div>
+
+      <form id="individual-form" class="card p-8 flex flex-col gap-6 fade-in delay-100">
+        <!-- Nombre -->
+        <div class="form-group">
+          <label class="form-label">Nombre completo *</label>
+          <input id="i-name" type="text" placeholder="Ej: María García" class="input-field" required maxlength="80" />
+          <p class="form-hint">Tu nombre (visible en el blockchain).</p>
+        </div>
+
+        <!-- Email -->
+        <div class="form-group">
+          <label class="form-label">Correo electrónico *</label>
+          <input id="i-email" type="email" placeholder="tu@correo.com" class="input-field" required />
+          <p class="form-hint">Solo para notificaciones (opcional almacenar — se guarda on-chain como referencia).</p>
+        </div>
+
+        <!-- Wallet info -->
+        <div class="bg-monad-accent2/5 border border-monad-accent2/20 rounded-xl p-4">
+          <p class="text-xs text-zinc-400 mb-1">Wallet conectada (registrada on-chain)</p>
+          <p id="i-wallet" class="text-sm font-mono text-monad-accent2">—</p>
+        </div>
+
+        <!-- Perks -->
+        <div class="grid grid-cols-3 gap-3">
+          <div class="perk-card">
+            <span class="text-2xl">🎫</span>
+            <span class="text-xs text-zinc-400 mt-1 text-center">Invita personas<br/>a tus pools</span>
+          </div>
+          <div class="perk-card">
+            <span class="text-2xl">🏆</span>
+            <span class="text-xs text-zinc-400 mt-1 text-center">Gana badges<br/>SBT on-chain</span>
+          </div>
+          <div class="perk-card">
+            <span class="text-2xl">🔒</span>
+            <span class="text-xs text-zinc-400 mt-1 text-center">Pools privadas<br/>solo por invitación</span>
+          </div>
+        </div>
+
+        <!-- Submit -->
+        <button type="submit" class="btn-primary py-4 text-base font-semibold mt-2" style="background: linear-gradient(135deg, #00d4ff, #836ef9);">
+          <span>🚀 Crear mi perfil</span>
+        </button>
+
+        <p class="text-xs text-zinc-600 text-center">
+          Al registrarte, firmarás una transacción on-chain. Asegúrate de tener MON de testnet.
+          <a href="https://faucet.monad.xyz" target="_blank" class="text-monad-accent hover:underline ml-1">Obtener MON →</a>
+        </p>
+      </form>
+    </div>
+
+    <!-- NO WALLET state -->
+    <div id="no-wallet" class="card p-12 text-center fade-in">
+      <div class="text-5xl mb-4">🦊</div>
+      <h2 class="text-xl font-bold text-white mb-2">Conecta tu wallet primero</h2>
+      <p class="text-zinc-400 text-sm mb-6">Necesitas MetaMask u otra wallet Web3 para registrarte en Natillera.</p>
+      <button id="btn-connect-main" class="btn-primary px-8 py-3">Conectar Wallet</button>
+    </div>
+
+    <!-- SUCCESS state -->
+    <div id="success-state" class="hidden text-center fade-in">
+      <div class="card p-12">
+        <div class="w-24 h-24 rounded-full bg-monad-green/10 border-2 border-monad-green/50 flex items-center justify-center text-5xl mx-auto mb-6 pulse-glow-green">
+          ✅
+        </div>
+        <h2 class="text-3xl font-bold text-white mb-2">¡Registro exitoso!</h2>
+        <p class="text-zinc-400 mb-4">Tu perfil quedó registrado en Monad Testnet.</p>
+        <div id="success-tx" class="hidden bg-monad-card border border-white/10 rounded-xl p-4 mb-6 text-left">
+          <p class="text-xs text-zinc-500 mb-1">TX Hash</p>
+          <a id="success-tx-link" href="#" target="_blank" class="text-xs font-mono text-monad-accent hover:underline break-all">—</a>
+        </div>
+        <div id="success-foundation-notice" class="hidden bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4 mb-6 text-sm text-yellow-400">
+          <p class="font-semibold mb-1">⏳ Pendiente de verificación</p>
+          <p class="text-xs">Un administrador revisará tu registro y activará tu cuenta para crear pools públicas. Te notificaremos.</p>
+        </div>
+        <button id="btn-go-dashboard" class="btn-primary px-8 py-3">
+          Ir al Dashboard →
+        </button>
+      </div>
+    </div>
+
+  </main>
+
+  <style>
+    .step-item { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .step-circle { width: 32px; height: 32px; border-radius: 50%; background: rgba(131,110,249,0.15); border: 2px solid rgba(131,110,249,0.3); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #836ef9; transition: all 0.3s; }
+    .step-item.active .step-circle { background: #836ef9; border-color: #836ef9; color: white; box-shadow: 0 0 15px rgba(131,110,249,0.5); }
+    .step-item.done .step-circle { background: #00e676; border-color: #00e676; color: #0a0a0f; }
+    .step-label { font-size: 11px; color: #71717a; }
+    .step-item.active .step-label { color: #836ef9; }
+    .step-item.done .step-label { color: #00e676; }
+    .step-line { flex: 1; height: 2px; background: rgba(131,110,249,0.15); border-radius: 1px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-label { font-size: 13px; font-weight: 600; color: #d4d4d8; }
+    .form-hint { font-size: 11px; color: #52525b; }
+    .perk-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 12px; padding: 16px 8px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .pulse-glow-green { animation: pulse-glow-green 2s ease-in-out infinite; }
+    @keyframes pulse-glow-green { 0%,100% { box-shadow: 0 0 20px rgba(0,230,118,0.3); } 50% { box-shadow: 0 0 40px rgba(0,230,118,0.6); } }
+  </style>
+
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/wallet.js"></script>
+  <canvas id="confetti-canvas" class="fixed inset-0 pointer-events-none z-40"></canvas>
+  <script>
+    // ─── Detectar tipo desde URL ──────────────────────────────────────────────
+    const params     = new URLSearchParams(window.location.search);
+    const userType   = params.get("type"); // "foundation" | "individual"
+    let   connectedAddress = null;
+
+    // ─── Inicialización ───────────────────────────────────────────────────────
+    (async () => {
+      const session = await tryAutoConnect();
+      if (session) {
+        connectedAddress = session.address;
+        initForm(connectedAddress);
+      } else {
+        showNoWallet();
+      }
+    })();
+
+    function showNoWallet() {
+      document.getElementById("no-wallet").classList.remove("hidden");
+      document.getElementById("form-foundation").classList.add("hidden");
+      document.getElementById("form-individual").classList.add("hidden");
+    }
+
+    function initForm(address) {
+      document.getElementById("no-wallet").classList.add("hidden");
+      updateWalletUI(address);
+
+      if (userType === "foundation") {
+        document.getElementById("form-foundation").classList.remove("hidden");
+        document.getElementById("f-wallet").textContent = address;
+        setStepActive(2);
+      } else {
+        document.getElementById("form-individual").classList.remove("hidden");
+        document.getElementById("i-wallet").textContent = address;
+        setStepActive(2);
+      }
+
+      // Verificar si ya está registrado
+      checkAlreadyRegistered(address);
+    }
+
+    async function checkAlreadyRegistered(address) {
+      try {
+        const contracts = getContracts();
+        if (!contracts) return;
+        const role = await contracts.registry.getRole(address);
+        if (parseInt(role.toString()) !== ROLE.NONE) {
+          showToast("Ya estás registrado. Redirigiendo...", "info");
+          setTimeout(() => window.location.href = "dashboard.html", 1500);
+        }
+      } catch {}
+    }
+
+    // ─── Conectar wallet ──────────────────────────────────────────────────────
+    ["btn-connect", "btn-connect-main"].forEach(id => {
+      document.getElementById(id).addEventListener("click", async () => {
+        try {
+          showLoader("Conectando wallet...");
+          const { address } = await connectWallet();
+          connectedAddress = address;
+          hideLoader();
+          initForm(address);
+        } catch (e) {
+          hideLoader();
+          showToast(e.message || "Error al conectar", "error");
+        }
+      });
+    });
+
+    // ─── Steps ────────────────────────────────────────────────────────────────
+    function setStepActive(n) {
+      document.querySelectorAll(".step-item").forEach((el, i) => {
+        el.classList.remove("active", "done");
+        if (i + 1 < n) el.classList.add("done");
+        if (i + 1 === n) el.classList.add("active");
+      });
+    }
+
+    // ─── Contador descripción ─────────────────────────────────────────────────
+    const fDesc = document.getElementById("f-desc");
+    if (fDesc) {
+      fDesc.addEventListener("input", () => {
+        document.getElementById("f-desc-count").textContent = `${fDesc.value.length}/500`;
+      });
+    }
+
+    // ─── Form Fundación ───────────────────────────────────────────────────────
+    document.getElementById("foundation-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const name        = document.getElementById("f-name").value.trim();
+      const nit         = document.getElementById("f-nit").value.trim();
+      const bankType    = document.getElementById("f-bank-type").value;
+      const bankNum     = document.getElementById("f-bank").value.trim();
+      const bankName    = document.getElementById("f-bank-name").value;
+      const description = document.getElementById("f-desc").value.trim();
+      const ipfs        = document.getElementById("f-ipfs").value.trim();
+
+      // Validaciones
+      if (!name) return showToast("El nombre es obligatorio", "error");
+      if (!nit)  return showToast("El NIT es obligatorio", "error");
+      if (!bankNum) return showToast("El número de cuenta es obligatorio", "error");
+      if (!bankName) return showToast("Selecciona tu entidad bancaria", "error");
+      if (description.length < 20) return showToast("La descripción debe tener al menos 20 caracteres", "error");
+
+      const bankAccount = `${bankName}|${bankType}|${bankNum}`;
+
+      try {
+        setStepActive(3);
+        showLoader("Firmando transacción on-chain...");
+        const contracts = getContracts();
+        if (!contracts) throw new Error("Contratos no disponibles. Verifica la red.");
+
+        const tx = await contracts.registry.registerFoundation(
+          name, nit, bankAccount, description, ipfs || ""
+        );
+
+        showLoader("Esperando confirmación...");
+        const receipt = await tx.wait();
+
+        hideLoader();
+        showSuccessState(receipt.transactionHash, "foundation");
+        launchConfetti();
+      } catch (e) {
+        hideLoader();
+        setStepActive(2);
+        showToast(e.reason || e.message || "Error en la transacción", "error");
+      }
+    });
+
+    // ─── Form Individual ──────────────────────────────────────────────────────
+    document.getElementById("individual-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const name  = document.getElementById("i-name").value.trim();
+      const email = document.getElementById("i-email").value.trim();
+
+      if (!name)  return showToast("El nombre es obligatorio", "error");
+      if (!email) return showToast("El correo es obligatorio", "error");
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showToast("Correo inválido", "error");
+
+      try {
+        setStepActive(3);
+        showLoader("Firmando transacción on-chain...");
+        const contracts = getContracts();
+        if (!contracts) throw new Error("Contratos no disponibles. Verifica la red.");
+
+        const tx = await contracts.registry.registerIndividual(name, email);
+
+        showLoader("Esperando confirmación...");
+        const receipt = await tx.wait();
+
+        hideLoader();
+        showSuccessState(receipt.transactionHash, "individual");
+        launchConfetti();
+      } catch (e) {
+        hideLoader();
+        setStepActive(2);
+        showToast(e.reason || e.message || "Error en la transacción", "error");
+      }
+    });
+
+    // ─── Success state ────────────────────────────────────────────────────────
+    function showSuccessState(txHash, type) {
+      document.getElementById("form-foundation").classList.add("hidden");
+      document.getElementById("form-individual").classList.add("hidden");
+      const s = document.getElementById("success-state");
+      s.classList.remove("hidden");
+
+      const txEl = document.getElementById("success-tx");
+      const txLink = document.getElementById("success-tx-link");
+      if (txHash) {
+        txEl.classList.remove("hidden");
+        txLink.href = `${MONAD_EXPLORER_URL}/tx/${txHash}`;
+        txLink.textContent = txHash;
+      }
+
+      if (type === "foundation") {
+        document.getElementById("success-foundation-notice").classList.remove("hidden");
+      }
+    }
+
+    document.getElementById("btn-go-dashboard").addEventListener("click", () => {
+      window.location.href = "dashboard.html";
+    });
+  </script>
+</body>
+</html>

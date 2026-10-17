@@ -1,250 +1,349 @@
 <!DOCTYPE html>
 <html lang="es" class="dark">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Natillera Transparente Web3</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        darkMode: "class",
-        theme: {
-          extend: {
-            colors: {
-              monad: {
-                bg: "#0F0F13",
-                card: "#1A1A22",
-                accent: "#8353E2",
-              },
-            },
-            fontFamily: {
-              sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
-            },
-            boxShadow: {
-              glow: "0 0 40px rgba(131, 83, 226, 0.25)",
-            },
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Natillera Web3 — Monad Blitz</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            monad: { bg: "#0F0F13", card: "#1A1A22", accent: "#8353E2", accent2: "#5E7CF8" },
           },
+          fontFamily: { sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"] },
+          boxShadow: { glow: "0 0 40px rgba(131,83,226,0.25)", glow2: "0 0 60px rgba(131,83,226,0.4)" },
         },
-      };
-    </script>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
-  </head>
-  <body class="min-h-screen bg-monad-bg font-sans text-zinc-100 antialiased">
-    <div class="pointer-events-none fixed inset-0 overflow-hidden">
-      <div
-        class="absolute -top-32 left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-monad-accent/20 blur-3xl"
-      ></div>
+      },
+    };
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/animations.css" />
+</head>
+<body class="min-h-screen bg-monad-bg font-sans text-zinc-100 antialiased overflow-x-hidden">
+
+  <!-- Canvas confetti -->
+  <canvas id="confetti-canvas"></canvas>
+
+  <!-- Background orbs -->
+  <div class="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden="true">
+    <div class="orb orb-1 absolute -top-48 -left-24 animate-float" style="animation-delay:0s"></div>
+    <div class="orb orb-2 absolute top-1/3 -right-32 animate-float" style="animation-delay:1.5s"></div>
+    <div class="orb orb-1 absolute -bottom-32 left-1/3 animate-float" style="animation-delay:3s; opacity:0.5"></div>
+    <!-- Grid overlay -->
+    <div class="absolute inset-0 opacity-[0.03]"
+      style="background-image: linear-gradient(rgba(131,83,226,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(131,83,226,0.5) 1px, transparent 1px); background-size: 60px 60px;">
+    </div>
+  </div>
+
+  <!-- Navbar -->
+  <nav class="navbar px-6 py-4 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-monad-accent to-monad-accent2 flex items-center justify-center shadow-glow animate-pulse-glow">
+        <span class="text-white font-bold text-sm">N</span>
+      </div>
+      <span class="font-bold text-white tracking-tight">Natillera <span class="gradient-text">Web3</span></span>
+    </div>
+    <div class="flex items-center gap-3">
+      <a href="explorer.html" class="hidden sm:inline-flex text-sm text-zinc-400 hover:text-white transition-colors px-3 py-1.5 rounded-xl hover:bg-white/5">
+        🔭 Explorer
+      </a>
+      <button id="btn-connect" class="btn-primary text-sm px-4 py-2">
+        Conectar Wallet
+      </button>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="relative min-h-screen flex flex-col items-center justify-center px-4 pt-20 pb-16">
+
+    <!-- Tag -->
+    <div class="animate-fade-in-down mb-6">
+      <span class="badge badge-foundation text-xs px-4 py-1.5">
+        🚀 Monad Blitz Hackathon · Web3
+      </span>
     </div>
 
-    <main class="relative mx-auto flex min-h-screen max-w-xl flex-col justify-center px-4 py-12">
-      <header class="mb-8 flex flex-col items-center gap-5 text-center sm:flex-row sm:justify-between sm:text-left">
+    <!-- Headline -->
+    <h1 class="animate-fade-in-up delay-100 text-4xl sm:text-6xl lg:text-7xl font-extrabold text-center leading-tight mb-6 max-w-4xl">
+      Recaudaciones <span class="gradient-text">transparentes</span><br/>en la blockchain
+    </h1>
+
+    <!-- Subtext -->
+    <p class="animate-fade-in-up delay-200 text-zinc-400 text-center text-base sm:text-xl max-w-2xl mb-10 leading-relaxed">
+      Crea pools de donación, apoya fundaciones verificadas, y recibe
+      <strong class="text-white">pruebas inmutables</strong> de tu participación.
+      Todo on-chain en <span class="text-monad-accent font-semibold">Monad</span>.
+    </p>
+
+    <!-- CTA Buttons -->
+    <div class="animate-fade-in-up delay-300 flex flex-col sm:flex-row gap-4 mb-16">
+      <button id="btn-launch" class="btn-primary text-base px-8 py-4 flex items-center gap-2">
+        <span>⚡</span> Lanzar App
+      </button>
+      <a href="explorer.html" class="btn-secondary text-base px-8 py-4 flex items-center gap-2 justify-center">
+        <span>🔭</span> Ver Pools Activas
+      </a>
+    </div>
+
+    <!-- Stats row -->
+    <div class="animate-fade-in-up delay-400 grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-3xl w-full mb-20">
+      <div class="stat-card text-center">
+        <p id="stat-pools" class="text-2xl font-bold gradient-text">—</p>
+        <p class="text-xs text-zinc-500 mt-1">Pools activas</p>
+      </div>
+      <div class="stat-card text-center">
+        <p id="stat-raised" class="text-2xl font-bold gradient-text">—</p>
+        <p class="text-xs text-zinc-500 mt-1">MON recaudados</p>
+      </div>
+      <div class="stat-card text-center">
+        <p id="stat-donors" class="text-2xl font-bold gradient-text">—</p>
+        <p class="text-xs text-zinc-500 mt-1">Donantes únicos</p>
+      </div>
+      <div class="stat-card text-center">
+        <p id="stat-sbts" class="text-2xl font-bold gradient-text">—</p>
+        <p class="text-xs text-zinc-500 mt-1">SBTs emitidos</p>
+      </div>
+    </div>
+
+    <!-- Feature cards -->
+    <div class="animate-fade-in-up delay-500 grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-4xl w-full">
+      <div class="card p-6">
+        <div class="w-12 h-12 rounded-2xl bg-monad-accent/10 flex items-center justify-center mb-4 text-2xl">🏛️</div>
+        <h3 class="font-bold text-white mb-2">Fundaciones</h3>
+        <p class="text-zinc-400 text-sm leading-relaxed">
+          Registra tu organización con NIT y cuenta bancaria. Los fondos se transfieren automáticamente sin intermediarios.
+        </p>
+      </div>
+      <div class="card p-6">
+        <div class="w-12 h-12 rounded-2xl bg-monad-accent2/10 flex items-center justify-center mb-4 text-2xl">🤝</div>
+        <h3 class="font-bold text-white mb-2">Personas Naturales</h3>
+        <p class="text-zinc-400 text-sm leading-relaxed">
+          Crea recaudaciones privadas e invita a tus contactos via wallet. Reembolso automático si no se alcanza la meta.
+        </p>
+      </div>
+      <div class="card p-6">
+        <div class="w-12 h-12 rounded-2xl bg-pink-500/10 flex items-center justify-center mb-4 text-2xl">🏅</div>
+        <h3 class="font-bold text-white mb-2">SBT de Participación</h3>
+        <p class="text-zinc-400 text-sm leading-relaxed">
+          Cada donación genera un Soulbound Token intransferible: tu huella inmutable de haber apoyado una causa.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- How it works -->
+  <section class="relative px-4 pb-24 max-w-4xl mx-auto">
+    <h2 class="text-2xl sm:text-3xl font-bold text-center mb-12 gradient-text">¿Cómo funciona?</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+      <div class="card p-6 flex gap-4">
+        <div class="w-10 h-10 rounded-full bg-monad-accent flex items-center justify-center font-bold text-white flex-shrink-0">1</div>
         <div>
-          <p class="mb-1 text-xs font-medium uppercase tracking-[0.2em] text-monad-accent">
-            Monad · Web3
-          </p>
-          <h1 class="text-2xl font-bold tracking-tight sm:text-3xl">
-            Natillera Transparente Web3
-          </h1>
+          <h4 class="font-semibold text-white mb-1">Conecta tu wallet</h4>
+          <p class="text-sm text-zinc-400">MetaMask en Monad Testnet. Un click y listo.</p>
         </div>
-        <button
-          id="btn-connect"
-          type="button"
-          class="rounded-2xl bg-monad-accent px-5 py-2.5 text-sm font-semibold text-white shadow-glow transition hover:bg-[#7346d4] focus:outline-none focus:ring-2 focus:ring-monad-accent/60"
-        >
-          Conectar MetaMask
+      </div>
+      <div class="card p-6 flex gap-4">
+        <div class="w-10 h-10 rounded-full bg-monad-accent flex items-center justify-center font-bold text-white flex-shrink-0">2</div>
+        <div>
+          <h4 class="font-semibold text-white mb-1">Regístrate</h4>
+          <p class="text-sm text-zinc-400">Elige si eres fundación o persona natural y completa tu perfil.</p>
+        </div>
+      </div>
+      <div class="card p-6 flex gap-4">
+        <div class="w-10 h-10 rounded-full bg-monad-accent flex items-center justify-center font-bold text-white flex-shrink-0">3</div>
+        <div>
+          <h4 class="font-semibold text-white mb-1">Crea o dona a una pool</h4>
+          <p class="text-sm text-zinc-400">Lanza tu campaña o contribuye a una fundación verificada.</p>
+        </div>
+      </div>
+      <div class="card p-6 flex gap-4">
+        <div class="w-10 h-10 rounded-full bg-monad-accent flex items-center justify-center font-bold text-white flex-shrink-0">4</div>
+        <div>
+          <h4 class="font-semibold text-white mb-1">Todo queda on-chain</h4>
+          <p class="text-sm text-zinc-400">Transparencia total, SBT automático y fondos sin intermediarios.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="border-t border-white/5 px-6 py-8 text-center text-sm text-zinc-600">
+    <p>Natillera Web3 · Monad Blitz Hackathon · Construido con ❤️ en Monad</p>
+    <p class="mt-1 text-xs">Contratos desplegados en Monad Testnet · <a href="explorer.html" class="text-monad-accent hover:underline">Ver explorer →</a></p>
+  </footer>
+
+  <!-- Modal: Elegir tipo de usuario -->
+  <div id="modal-type" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-content max-w-md">
+      <h2 id="modal-title" class="text-xl font-bold text-white mb-2 text-center">¿Cómo quieres participar?</h2>
+      <p class="text-sm text-zinc-400 text-center mb-8">Elige tu tipo de cuenta para personalizar tu experiencia.</p>
+
+      <div class="grid grid-cols-2 gap-4">
+        <button id="btn-foundation-type" class="card p-6 flex flex-col items-center gap-3 hover:cursor-pointer group border-2 border-transparent hover:border-monad-accent/50 transition-all">
+          <div class="w-14 h-14 rounded-2xl bg-monad-accent/10 flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">
+            🏛️
+          </div>
+          <span class="font-semibold text-white text-sm">Fundación</span>
+          <span class="text-xs text-zinc-500 text-center">Pools públicas · NIT · Cuenta bancaria</span>
         </button>
-      </header>
 
-      <section class="space-y-5 rounded-3xl border border-white/5 bg-monad-card p-6 shadow-glow sm:p-8">
-        <div>
-          <p class="mb-2 text-sm font-medium text-zinc-400">Dirección conectada</p>
-          <div
-            id="user-address"
-            class="truncate rounded-2xl border border-white/10 bg-[#121218] px-4 py-3 font-mono text-sm text-zinc-300"
-          >
-            No conectada
+        <button id="btn-individual-type" class="card p-6 flex flex-col items-center gap-3 hover:cursor-pointer group border-2 border-transparent hover:border-monad-accent2/50 transition-all">
+          <div class="w-14 h-14 rounded-2xl bg-monad-accent2/10 flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">
+            🤝
           </div>
-        </div>
+          <span class="font-semibold text-white text-sm">Persona Natural</span>
+          <span class="text-xs text-zinc-500 text-center">Pools privadas · Por invitación</span>
+        </button>
+      </div>
 
-        <div>
-          <div class="mb-2 flex items-center justify-between text-sm">
-            <span class="font-medium text-zinc-400">Avance del recaudo</span>
-            <span id="progress-label" class="font-semibold text-monad-accent">0.00 / 1.00 MON</span>
-          </div>
-          <div class="h-3 overflow-hidden rounded-full bg-[#121218]">
-            <div
-              id="progress-bar"
-              class="h-full w-0 rounded-full bg-monad-accent transition-all duration-500"
-              role="progressbar"
-              aria-valuemin="0"
-              aria-valuemax="100"
-              aria-valuenow="0"
-            ></div>
-          </div>
-        </div>
+      <button id="btn-modal-close" class="mt-6 w-full btn-secondary text-sm py-3">
+        Cancelar
+      </button>
+    </div>
+  </div>
 
-        <div class="space-y-3">
-          <label for="input-amount" class="block text-sm font-medium text-zinc-400">
-            Monto a aportar (MON)
-          </label>
-          <input
-            id="input-amount"
-            type="text"
-            inputmode="decimal"
-            placeholder="0.10"
-            class="w-full rounded-2xl border border-white/10 bg-[#121218] px-4 py-3 text-sm text-white placeholder:text-zinc-500 focus:border-monad-accent focus:outline-none focus:ring-2 focus:ring-monad-accent/40"
-          />
-          <button
-            id="btn-deposit"
-            type="button"
-            class="w-full rounded-2xl bg-monad-accent px-5 py-3 text-sm font-semibold text-white shadow-glow transition hover:bg-[#7346d4] focus:outline-none focus:ring-2 focus:ring-monad-accent/60"
-          >
-            Aportar a la Natillera
-          </button>
-          <button
-            id="btn-refund"
-            type="button"
-            class="w-full rounded-2xl border border-white/10 bg-transparent px-5 py-3 text-sm font-semibold text-zinc-200 transition hover:border-monad-accent/50 hover:text-white focus:outline-none focus:ring-2 focus:ring-monad-accent/40"
-          >
-            Reclamar Reembolso
-          </button>
-        </div>
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/wallet.js"></script>
+  <script>
+    // ─── Estado ───────────────────────────────────────────
+    let walletConnected = false;
 
-        <p id="status-msg" class="text-center text-xs text-zinc-400 mt-2 h-4"></p>
-      </section>
-    </main>
-
-    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
-    <script>
-      const contractAddress = "0xa219eb817a7fc874c5F13Ae94fED9314d1D9A0a6";
-      const contractABI = [
-        "function aportar() external payable",
-        "function reclamarReembolso() external",
-        "function totalRecaudado() public view returns (uint256)",
-        "function metaMonto() public view returns (uint256)"
-      ];
-
-      let provider = null;
-      let signer = null;
-      let contract = null;
-
-      function recortarDireccion(address) {
-        return address.slice(0, 6) + "..." + address.slice(-4);
+    // ─── Auto-connect al cargar ───────────────────────────
+    (async () => {
+      const session = await tryAutoConnect();
+      if (session) {
+        walletConnected = true;
+        updateWalletUI(session.address);
+        await checkUserRole(session.address);
+        await loadStats();
       }
+    })();
 
-      async function refreshData() {
-        if (!contract) return;
-        try {
-          const totalRaw = await contract.totalRecaudado();
-          const metaRaw = await contract.metaMonto();
-
-          const totalFormatted = parseFloat(ethers.utils.formatEther(totalRaw)).toFixed(2);
-          const metaFormatted = parseFloat(ethers.utils.formatEther(metaRaw)).toFixed(2);
-          
-          let percent = 0;
-          if (parseFloat(metaFormatted) > 0) {
-            percent = Math.min(Math.round((totalFormatted / metaFormatted) * 100), 100);
-          }
-
-          document.getElementById("progress-label").textContent = `${totalFormatted} / ${metaFormatted} MON`;
-          
-          const progressBar = document.getElementById("progress-bar");
-          progressBar.style.width = `${percent}%`;
-          progressBar.setAttribute("aria-valuenow", percent);
-        } catch (error) {
-          console.error("Error al actualizar datos:", error);
-        }
+    // ─── Conectar wallet ──────────────────────────────────
+    document.getElementById("btn-connect").addEventListener("click", async () => {
+      try {
+        showLoader("Conectando wallet...");
+        const { address } = await connectWallet();
+        walletConnected = true;
+        updateWalletUI(address);
+        hideLoader();
+        await checkUserRole(address);
+        await loadStats();
+      } catch (e) {
+        hideLoader();
+        showToast(e.message || "Error al conectar", "error");
       }
+    });
 
-      document.getElementById("btn-connect").addEventListener("click", async function () {
-        try {
-          if (!window.ethereum) {
-            alert("MetaMask no está instalado");
-            return;
-          }
+    // ─── Verificar rol del usuario ────────────────────────
+    async function checkUserRole(address) {
+      try {
+        const contracts = getContracts();
+        if (!contracts) return;
+        const role = await contracts.registry.getRole(address);
+        const roleNum = parseInt(role.toString());
 
-          const accounts = await window.ethereum.request({
-            method: "eth_requestAccounts",
-          });
-          const account = accounts[0];
-          document.getElementById("user-address").textContent = recortarDireccion(account);
-
-          // Poner "any" evita el error de soporte ENS en la red Monad
-          provider = new ethers.providers.Web3Provider(window.ethereum, "any");
-          signer = provider.getSigner();
-          contract = new ethers.Contract(contractAddress, contractABI, signer);
-
-          document.getElementById("btn-connect").textContent = "Conectado";
-          
-          // Cargar los datos automáticamente al conectar
-          await refreshData();
-        } catch (error) {
-          alert(error.message || "Error al conectar MetaMask");
+        if (roleNum === ROLE.NONE) {
+          // Nuevo usuario — mostrar modal de elección
+          document.getElementById("modal-type").classList.remove("hidden");
+        } else {
+          // Ya registrado — ir al dashboard
+          showToast("¡Bienvenido de vuelta!", "success");
+          setTimeout(() => {
+            window.location.href = "dashboard.html";
+          }, 800);
         }
-      });
+      } catch (e) {
+        // Si el contrato no está desplegado aún, mostrar el modal igual
+        document.getElementById("modal-type").classList.remove("hidden");
+      }
+    }
 
-      document.getElementById("btn-deposit").addEventListener("click", async function () {
-        const statusMsg = document.getElementById("status-msg");
+    // ─── Modal de tipo ────────────────────────────────────
+    document.getElementById("btn-launch").addEventListener("click", async () => {
+      if (!walletConnected) {
         try {
-          if (!window.ethereum) {
-            alert("MetaMask no está instalado");
-            return;
-          }
-
-          if (!contract) {
-            alert("Conecta MetaMask primero");
-            return;
-          }
-
-          const amount = document.getElementById("input-amount").value;
-          if (!amount || parseFloat(amount) <= 0) {
-            alert("Ingresa un monto válido a aportar");
-            return;
-          }
-
-          if (statusMsg) statusMsg.textContent = "Procesando transacción en Monad...";
-
-          const tx = await contract.aportar({
-            value: ethers.utils.parseEther(amount),
-          });
-          await tx.wait();
-
-          if (statusMsg) statusMsg.textContent = "¡Aporte realizado con éxito!";
-          document.getElementById("input-amount").value = "";
-          
-          // Actualizar la barra de progreso en tiempo real
-          await refreshData();
-        } catch (error) {
-          if (statusMsg) statusMsg.textContent = "";
-          alert(error.message || "Error al aportar");
+          showLoader("Conectando wallet...");
+          const { address } = await connectWallet();
+          walletConnected = true;
+          updateWalletUI(address);
+          hideLoader();
+          await checkUserRole(address);
+        } catch (e) {
+          hideLoader();
+          showToast(e.message || "Error al conectar", "error");
         }
-      });
+      } else {
+        await checkUserRole(getAddress());
+      }
+    });
 
-      document.getElementById("btn-refund").addEventListener("click", async function () {
-        const statusMsg = document.getElementById("status-msg");
-        try {
-          if (!contract) {
-            alert("Conecta MetaMask primero");
-            return;
-          }
+    document.getElementById("btn-modal-close").addEventListener("click", () => {
+      document.getElementById("modal-type").classList.add("hidden");
+    });
 
-          if (statusMsg) statusMsg.textContent = "Solicitando reembolso...";
+    document.getElementById("btn-foundation-type").addEventListener("click", () => {
+      document.getElementById("modal-type").classList.add("hidden");
+      window.location.href = "register.html?type=foundation";
+    });
 
-          const tx = await contract.reclamarReembolso();
-          await tx.wait();
+    document.getElementById("btn-individual-type").addEventListener("click", () => {
+      document.getElementById("modal-type").classList.add("hidden");
+      window.location.href = "register.html?type=individual";
+    });
 
-          if (statusMsg) statusMsg.textContent = "¡Reembolso procesado con éxito!";
-          await refreshData();
-        } catch (error) {
-          if (statusMsg) statusMsg.textContent = "";
-          alert(error.message || "No se pudo procesar el reembolso");
+    // ─── Stats globales ───────────────────────────────────
+    async function loadStats() {
+      try {
+        const contracts = getContracts();
+        if (!contracts) return;
+
+        // Pools count
+        const count = await contracts.factory.getTotalPoolCount();
+        animateCount("stat-pools", parseInt(count.toString()));
+
+        // SBTs
+        const sbtCount = await contracts.sbt.totalSupply();
+        animateCount("stat-sbts", parseInt(sbtCount.toString()));
+
+        // Raised (sumar todas las pools)
+        const pools = await contracts.factory.getAllPools();
+        let totalRaised = ethers.BigNumber.from(0);
+        let totalDonors = new Set();
+
+        for (const addr of pools.slice(0, 20)) { // Limitar a 20 para evitar timeout
+          try {
+            const pool = getPool(addr);
+            const [raised] = await pool.getProgress();
+            totalRaised = totalRaised.add(raised);
+            const donors = await pool.getDonors();
+            donors.forEach(d => totalDonors.add(d.toLowerCase()));
+          } catch {}
         }
-      });
-    </script>
-  </body>
+
+        document.getElementById("stat-raised").textContent = parseFloat(ethers.utils.formatEther(totalRaised)).toFixed(2) + " MON";
+        animateCount("stat-donors", totalDonors.size);
+      } catch {}
+    }
+
+    function animateCount(id, target) {
+      const el = document.getElementById(id);
+      if (!el || target === 0) { if (el) el.textContent = "0"; return; }
+      let current = 0;
+      const step = Math.max(1, Math.floor(target / 30));
+      const interval = setInterval(() => {
+        current = Math.min(current + step, target);
+        el.textContent = current.toLocaleString();
+        if (current >= target) clearInterval(interval);
+      }, 40);
+    }
+  </script>
+</body>
 </html>

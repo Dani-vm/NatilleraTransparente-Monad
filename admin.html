@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Panel · Natillera Web3</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔐</text></svg>" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/animations.css" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            "monad-bg": "#0a0a0f",
+            "monad-card": "#13131a",
+            "monad-accent": "#836ef9",
+            "monad-accent2": "#00d4ff",
+            "monad-green": "#00e676",
+          },
+        },
+      },
+    };
+  </script>
+</head>
+<body class="bg-monad-bg min-h-screen text-white font-sans">
+  <div class="orb orb-1"></div>
+
+  <div id="loader" class="loader-overlay hidden">
+    <div class="loader-inner">
+      <div class="loader-spinner"></div>
+      <p id="loader-text" class="text-white/80 text-sm mt-4">Procesando...</p>
+    </div>
+  </div>
+  <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2"></div>
+
+  <nav class="navbar px-6 py-4 flex items-center justify-between">
+    <a href="index.html" class="flex items-center gap-2 text-white font-bold text-lg hover:opacity-80">
+      <span class="text-2xl">🌱</span>
+      <span class="gradient-text">Natillera</span>
+      <span class="text-xs text-zinc-500 ml-2">Admin</span>
+    </a>
+    <button id="btn-connect" class="btn-primary px-4 py-2 text-sm">Conectar Wallet</button>
+  </nav>
+
+  <main class="max-w-4xl mx-auto px-6 py-12">
+    <div class="mb-8 fade-in">
+      <h1 class="text-3xl font-bold gradient-text mb-1">Panel de Administración</h1>
+      <p class="text-zinc-400 text-sm">Solo el owner del contrato Registry puede verificar fundaciones.</p>
+    </div>
+
+    <!-- Acceso denegado -->
+    <div id="access-denied" class="hidden card p-12 text-center">
+      <div class="text-5xl mb-4">🚫</div>
+      <h2 class="text-xl font-bold text-red-400 mb-2">Acceso denegado</h2>
+      <p class="text-zinc-400 text-sm">Solo el owner del contrato Registry puede acceder.</p>
+      <p class="text-xs text-zinc-600 mt-2">Tu wallet: <span id="denied-address" class="font-mono">—</span></p>
+    </div>
+
+    <!-- No conectado -->
+    <div id="not-connected" class="card p-12 text-center fade-in">
+      <div class="text-5xl mb-4">🔐</div>
+      <h2 class="text-xl font-bold text-white mb-2">Conecta tu wallet</h2>
+      <p class="text-zinc-400 text-sm mb-6">Debes ser el owner del contrato para acceder.</p>
+      <button id="btn-connect-main" class="btn-primary px-8 py-3">Conectar Wallet</button>
+    </div>
+
+    <!-- Panel admin -->
+    <div id="admin-panel" class="hidden">
+
+      <!-- Stats -->
+      <div class="grid grid-cols-3 gap-4 mb-8 fade-in">
+        <div class="stat-card text-center">
+          <p class="stat-label">Fundaciones registradas</p>
+          <p id="a-total-foundations" class="stat-value">—</p>
+        </div>
+        <div class="stat-card text-center">
+          <p class="stat-label">Verificadas</p>
+          <p id="a-verified" class="stat-value text-monad-green">—</p>
+        </div>
+        <div class="stat-card text-center">
+          <p class="stat-label">Pendientes</p>
+          <p id="a-pending" class="stat-value text-yellow-400">—</p>
+        </div>
+      </div>
+
+      <!-- Lista de fundaciones -->
+      <div class="fade-in delay-100">
+        <h2 class="text-lg font-bold text-white mb-4">🏛️ Fundaciones Registradas</h2>
+        <div id="foundations-loading" class="card p-8 text-center">
+          <div class="skeleton h-6 w-1/3 mx-auto mb-2"></div>
+          <div class="skeleton h-4 w-1/2 mx-auto"></div>
+        </div>
+        <div id="foundations-list" class="hidden flex flex-col gap-4"></div>
+      </div>
+
+      <!-- Autorizar minter SBT manualmente -->
+      <div class="mt-8 card p-6 fade-in delay-200">
+        <h2 class="text-lg font-bold text-white mb-4">⚡ Autorizar Minter SBT</h2>
+        <p class="text-sm text-zinc-400 mb-4">
+          Autoriza la Factory como minter del SBT para que las pools puedan acuñar badges automáticamente.
+        </p>
+        <div class="flex gap-3">
+          <input id="minter-address" type="text" placeholder="Dirección a autorizar (0x...)"
+            class="input-field flex-1" />
+          <button id="btn-authorize-minter" class="btn-primary px-6">Autorizar</button>
+        </div>
+        <p class="form-hint mt-2">Ingresa la dirección del contrato Factory para permitir el mint automático.</p>
+      </div>
+    </div>
+  </main>
+
+  <style>
+    .stat-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 14px; padding: 16px; }
+    .stat-label { font-size: 11px; color: #71717a; margin-bottom: 4px; }
+    .stat-value { font-size: 24px; font-weight: 700; color: #fff; }
+    .form-hint { font-size: 11px; color: #52525b; }
+    .foundation-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 16px; padding: 20px; }
+  </style>
+
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/wallet.js"></script>
+  <script>
+    let userAddress = null;
+    let isOwner = false;
+
+    (async () => {
+      const session = await tryAutoConnect();
+      if (session) {
+        userAddress = session.address;
+        updateWalletUI(userAddress);
+        await checkAccess();
+      }
+    })();
+
+    ["btn-connect","btn-connect-main"].forEach(id => {
+      document.getElementById(id).addEventListener("click", async () => {
+        try {
+          showLoader("Conectando...");
+          const { address } = await connectWallet();
+          userAddress = address;
+          updateWalletUI(address);
+          hideLoader();
+          await checkAccess();
+        } catch (e) {
+          hideLoader();
+          showToast(e.message, "error");
+        }
+      });
+    });
+
+    async function checkAccess() {
+      document.getElementById("not-connected").classList.add("hidden");
+      try {
+        const contracts = getContracts();
+        if (!contracts) return;
+
+        // El owner del Registry está en el contrato
+        // Lo verificamos intentando llamar una función onlyOwner de lectura (no existe)
+        // En su lugar pedimos el campo owner directamente
+        const registryRaw = new ethers.Contract(
+          CONTRACT_ADDRESSES.registry,
+          [...REGISTRY_ABI, "function owner() external view returns (address)"],
+          getContracts().registry.provider || window._provider
+        );
+
+        const sbtRaw = new ethers.Contract(
+          CONTRACT_ADDRESSES.sbt,
+          [...SBT_ABI, "function owner() external view returns (address)"],
+          getSigner()
+        );
+
+        let ownerAddr;
+        try {
+          const reg = new ethers.Contract(
+            CONTRACT_ADDRESSES.registry,
+            ["function owner() external view returns (address)"],
+            getSigner()
+          );
+          ownerAddr = await reg.owner();
+        } catch { ownerAddr = null; }
+
+        if (ownerAddr && ownerAddr.toLowerCase() === userAddress.toLowerCase()) {
+          isOwner = true;
+          document.getElementById("admin-panel").classList.remove("hidden");
+          await loadFoundations();
+        } else {
+          document.getElementById("access-denied").classList.remove("hidden");
+          document.getElementById("denied-address").textContent = userAddress;
+        }
+      } catch (e) {
+        // Si el contrato no está desplegado, mostrar el panel igual para demo
+        isOwner = true;
+        document.getElementById("admin-panel").classList.remove("hidden");
+        showToast("Modo demo: contratos no desplegados", "warning");
+      }
+    }
+
+    async function loadFoundations() {
+      document.getElementById("foundations-loading").classList.remove("hidden");
+      document.getElementById("foundations-list").classList.add("hidden");
+      try {
+        const contracts = getContracts();
+        const list = await contracts.registry.getFoundationList();
+        const total = list.length;
+        let verified = 0, pending = 0;
+
+        document.getElementById("a-total-foundations").textContent = total;
+        document.getElementById("foundations-loading").classList.add("hidden");
+        const container = document.getElementById("foundations-list");
+        container.classList.remove("hidden");
+        container.innerHTML = "";
+
+        for (const addr of list) {
+          try {
+            const info = await contracts.registry.foundations(addr);
+            const [bankName, bankType, bankNum] = info.bankAccount.split("|");
+            if (info.verified) verified++; else pending++;
+
+            container.innerHTML += `
+              <div class="foundation-card">
+                <div class="flex items-start justify-between gap-4">
+                  <div class="flex-1">
+                    <div class="flex items-center gap-2 mb-1 flex-wrap">
+                      <h3 class="font-semibold text-white">${escapeHtml(info.name)}</h3>
+                      <span class="${info.verified ? 'badge-verified' : 'badge-reached'} text-xs px-2 py-0.5">
+                        ${info.verified ? '✅ Verificada' : '⏳ Pendiente'}
+                      </span>
+                    </div>
+                    <p class="text-xs font-mono text-zinc-500 mb-2">${addr}</p>
+                    <div class="grid grid-cols-2 gap-2 text-xs text-zinc-400">
+                      <span>NIT: <strong class="text-white">${escapeHtml(info.nit)}</strong></span>
+                      <span>Banco: <strong class="text-white">${escapeHtml(bankName || info.bankAccount)}</strong></span>
+                      <span>Tipo: <strong class="text-white">${escapeHtml(bankType || '—')}</strong></span>
+                      <span>Cuenta: <strong class="text-white font-mono">${escapeHtml(bankNum || '—')}</strong></span>
+                    </div>
+                    <p class="text-xs text-zinc-500 mt-2">${escapeHtml(info.description.slice(0, 120))}${info.description.length > 120 ? '...' : ''}</p>
+                  </div>
+                  <div class="flex flex-col gap-2 flex-shrink-0">
+                    ${!info.verified ? `
+                    <button class="btn-primary px-4 py-2 text-xs" onclick="verifyFoundation('${addr}', true)">
+                      ✅ Verificar
+                    </button>` : `
+                    <button class="btn-danger px-4 py-2 text-xs" onclick="verifyFoundation('${addr}', false)">
+                      ❌ Revocar
+                    </button>`}
+                    <a href="${MONAD_EXPLORER_URL}/address/${addr}" target="_blank"
+                       class="btn-secondary px-4 py-2 text-xs text-center">🔍 Explorer</a>
+                  </div>
+                </div>
+              </div>`;
+          } catch {}
+        }
+
+        document.getElementById("a-verified").textContent = verified;
+        document.getElementById("a-pending").textContent = pending;
+
+      } catch (e) {
+        document.getElementById("foundations-loading").classList.add("hidden");
+        showToast("Error: " + e.message, "error");
+      }
+    }
+
+    window.verifyFoundation = async (addr, verify) => {
+      try {
+        showLoader(verify ? "Verificando fundación..." : "Revocando verificación...");
+        const contracts = getContracts();
+        const tx = verify
+          ? await contracts.registry.verifyFoundation(addr)
+          : await contracts.registry.revokeFoundation(addr);
+        await tx.wait();
+        hideLoader();
+        showToast(verify ? "✅ Fundación verificada" : "Verificación revocada", verify ? "success" : "warning");
+        await loadFoundations();
+      } catch (e) {
+        hideLoader();
+        showToast(e.reason || e.message || "Error", "error");
+      }
+    };
+
+    document.getElementById("btn-authorize-minter").addEventListener("click", async () => {
+      const addr = document.getElementById("minter-address").value.trim();
+      if (!ethers.utils.isAddress(addr)) return showToast("Dirección inválida", "error");
+      try {
+        showLoader("Autorizando minter...");
+        const contracts = getContracts();
+        const sbt = new ethers.Contract(CONTRACT_ADDRESSES.sbt, SBT_ABI, getSigner());
+        const tx = await sbt.authorizeMinter(addr);
+        await tx.wait();
+        hideLoader();
+        showToast("Minter autorizado: " + shortenAddress(addr), "success");
+        document.getElementById("minter-address").value = "";
+      } catch (e) {
+        hideLoader();
+        showToast(e.reason || e.message || "Error", "error");
+      }
+    });
+
+    function escapeHtml(s) {
+      return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+    }
+  </script>
+</body>
+</html>

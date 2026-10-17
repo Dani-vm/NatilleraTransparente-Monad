@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Explorer · Natillera Web3</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌱</text></svg>" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/animations.css" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            "monad-bg": "#0a0a0f",
+            "monad-card": "#13131a",
+            "monad-accent": "#836ef9",
+            "monad-accent2": "#00d4ff",
+            "monad-green": "#00e676",
+          },
+        },
+      },
+    };
+  </script>
+</head>
+<body class="bg-monad-bg min-h-screen text-white font-sans">
+
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+
+  <!-- Loader -->
+  <div id="loader" class="loader-overlay hidden">
+    <div class="loader-inner">
+      <div class="loader-spinner"></div>
+      <p id="loader-text" class="text-white/80 text-sm mt-4">Cargando...</p>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2"></div>
+
+  <!-- Modal: Detalle de Pool -->
+  <div id="modal-pool-detail" class="modal-overlay hidden" role="dialog">
+    <div class="modal-content max-w-2xl">
+      <div class="flex items-start justify-between mb-6">
+        <div class="flex-1">
+          <div id="detail-badges" class="flex gap-2 mb-2 flex-wrap"></div>
+          <h2 id="detail-name" class="text-2xl font-bold text-white">—</h2>
+          <p id="detail-creator" class="text-xs font-mono text-zinc-500 mt-1">—</p>
+        </div>
+        <button id="btn-close-detail" class="text-zinc-500 hover:text-white text-2xl leading-none ml-4">&times;</button>
+      </div>
+
+      <p id="detail-description" class="text-zinc-400 text-sm mb-6">—</p>
+
+      <!-- Progress -->
+      <div class="mb-6">
+        <div class="flex justify-between text-sm text-zinc-400 mb-2">
+          <span id="detail-raised-label">0 MON recaudado</span>
+          <span id="detail-pct">0%</span>
+        </div>
+        <div class="progress-track h-3">
+          <div id="detail-progress-fill" class="progress-fill" style="width:0%"></div>
+        </div>
+        <div class="flex justify-between text-xs text-zinc-500 mt-1">
+          <span id="detail-goal-label">Meta: 0 MON</span>
+          <span id="detail-deadline-label">—</span>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="grid grid-cols-3 gap-4 mb-6">
+        <div class="stat-card text-center">
+          <p class="stat-label text-xs">Donantes</p>
+          <p id="detail-donors" class="text-2xl font-bold text-white">—</p>
+        </div>
+        <div class="stat-card text-center">
+          <p class="stat-label text-xs">Badges SBT</p>
+          <p id="detail-sbts" class="text-2xl font-bold text-monad-accent">—</p>
+        </div>
+        <div class="stat-card text-center">
+          <p class="stat-label text-xs">Matching</p>
+          <p id="detail-matching" class="text-2xl font-bold text-monad-accent2">—</p>
+        </div>
+      </div>
+
+      <!-- Donate section -->
+      <div id="detail-donate-section" class="border-t border-white/10 pt-6">
+        <h3 class="font-semibold text-white mb-3">Hacer una donación</h3>
+        <div id="detail-donate-warning" class="hidden bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-3 text-sm text-yellow-400 mb-4">
+          ⚠️ Debes conectar tu wallet para donar.
+        </div>
+        <form id="detail-donate-form" class="flex gap-3 flex-wrap">
+          <input id="detail-amount" type="number" step="0.001" min="0.001"
+            placeholder="Monto en MON" class="input-field flex-1 min-w-36" />
+          <button type="submit" class="btn-primary px-6 py-3 text-sm font-semibold">
+            💜 Donar
+          </button>
+        </form>
+        <div id="detail-zero-warn" class="hidden mt-2 bg-red-500/10 border border-red-500/20 rounded-lg p-2 text-xs text-red-400">
+          🚫 El monto debe ser mayor a 0 MON
+        </div>
+        <div class="flex gap-2 mt-2">
+          <button class="quick-detail btn-secondary px-3 py-1 text-xs" data-val="0.01">0.01</button>
+          <button class="quick-detail btn-secondary px-3 py-1 text-xs" data-val="0.1">0.1</button>
+          <button class="quick-detail btn-secondary px-3 py-1 text-xs" data-val="0.5">0.5</button>
+          <button class="quick-detail btn-secondary px-3 py-1 text-xs" data-val="1">1.0</button>
+        </div>
+      </div>
+
+      <!-- Top donantes -->
+      <div class="border-t border-white/10 pt-4 mt-4">
+        <h3 class="font-semibold text-white text-sm mb-3">🏅 Top Donantes</h3>
+        <div id="detail-leaderboard" class="flex flex-col gap-2 max-h-40 overflow-y-auto"></div>
+      </div>
+
+      <!-- Link on-chain -->
+      <div class="mt-4 pt-4 border-t border-white/10 flex gap-3 flex-wrap">
+        <a id="detail-explorer-link" href="#" target="_blank" class="btn-secondary px-4 py-2 text-xs">
+          🔍 Ver en Monad Explorer
+        </a>
+        <button id="detail-share-btn" class="btn-secondary px-4 py-2 text-xs">
+          📋 Compartir enlace
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Matching Fund -->
+  <div id="modal-matching" class="modal-overlay hidden" role="dialog">
+    <div class="modal-content max-w-sm">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-bold text-white">⚡ Matching Fund</h2>
+        <button id="btn-close-matching" class="text-zinc-500 hover:text-white text-2xl">&times;</button>
+      </div>
+      <p class="text-sm text-zinc-400 mb-4">
+        Agrega fondos de matching para que cada donación se duplique automáticamente.
+        Los fondos se distribuyen hasta agotar el matching.
+      </p>
+      <form id="matching-form" class="flex flex-col gap-4">
+        <input id="matching-amount" type="number" step="0.001" min="0.001"
+          placeholder="Monto en MON" class="input-field" required />
+        <button type="submit" class="btn-primary py-3 font-semibold">⚡ Depositar Matching</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Navbar -->
+  <nav class="navbar px-6 py-4 flex items-center justify-between">
+    <a href="index.html" class="flex items-center gap-2 text-white font-bold text-lg hover:opacity-80 transition-opacity">
+      <span class="text-2xl">🌱</span>
+      <span class="gradient-text">Natillera</span>
+    </a>
+    <div class="flex items-center gap-3">
+      <a href="dashboard.html" class="text-sm text-zinc-400 hover:text-white transition-colors hidden sm:block">Dashboard →</a>
+      <div id="wallet-badge" class="hidden items-center gap-2 bg-monad-accent/10 border border-monad-accent/20 rounded-full px-3 py-1.5">
+        <div class="w-2 h-2 rounded-full bg-monad-green animate-pulse"></div>
+        <span id="wallet-address" class="text-xs font-mono text-monad-accent">—</span>
+      </div>
+      <button id="btn-connect" class="btn-primary px-4 py-2 text-sm">Conectar Wallet</button>
+    </div>
+  </nav>
+
+  <main class="max-w-7xl mx-auto px-6 py-10">
+
+    <!-- Header -->
+    <div class="mb-10 fade-in">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        <div>
+          <h1 class="text-3xl sm:text-4xl font-bold gradient-text mb-2">
+            Explorer Público 🌐
+          </h1>
+          <p class="text-zinc-400">Todas las recaudaciones verificadas en Monad Testnet, en tiempo real.</p>
+        </div>
+        <div class="flex gap-3">
+          <button id="btn-refresh" class="btn-secondary px-4 py-2 text-sm">🔄 Actualizar</button>
+          <a href="dashboard.html" class="btn-primary px-4 py-2 text-sm">Mi Dashboard →</a>
+        </div>
+      </div>
+
+      <!-- Stats globales -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div class="stat-card">
+          <p class="stat-label">Pools Fundaciones</p>
+          <p id="g-foundation-pools" class="stat-value">—</p>
+        </div>
+        <div class="stat-card">
+          <p class="stat-label">Total Recaudado</p>
+          <p id="g-total-raised" class="stat-value text-sm text-monad-accent">—</p>
+        </div>
+        <div class="stat-card">
+          <p class="stat-label">Donantes únicos</p>
+          <p id="g-donors" class="stat-value">—</p>
+        </div>
+        <div class="stat-card">
+          <p class="stat-label">Badges SBT emitidos</p>
+          <p id="g-sbts" class="stat-value text-monad-accent2">—</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filtros y búsqueda -->
+    <div class="flex flex-col sm:flex-row gap-3 mb-8 fade-in delay-100">
+      <input id="search-input" type="text" placeholder="🔍 Buscar por nombre o descripción..."
+        class="input-field flex-1" />
+      <select id="filter-status" class="input-field w-full sm:w-48">
+        <option value="all">Todas las pools</option>
+        <option value="0">Activas</option>
+        <option value="1">Meta alcanzada</option>
+        <option value="2">Expiradas</option>
+      </select>
+      <select id="filter-sort" class="input-field w-full sm:w-48">
+        <option value="recent">Más recientes</option>
+        <option value="raised">Mayor recaudo</option>
+        <option value="pct">Mayor progreso</option>
+        <option value="deadline">Próx. a expirar</option>
+      </select>
+    </div>
+
+    <!-- Leaderboard global -->
+    <div class="mb-10 fade-in delay-150">
+      <h2 class="text-lg font-bold text-white mb-4">🏆 Leaderboard Global de Donantes</h2>
+      <div class="card p-4">
+        <div id="global-leaderboard" class="flex flex-col gap-2">
+          <div class="skeleton h-8 w-full rounded-lg"></div>
+          <div class="skeleton h-8 w-full rounded-lg"></div>
+          <div class="skeleton h-8 w-full rounded-lg"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pools grid -->
+    <div class="mb-4 fade-in delay-200">
+      <h2 class="text-lg font-bold text-white mb-2">🏛️ Pools de Fundaciones Verificadas</h2>
+      <p class="text-xs text-zinc-500 mb-6">Solo se muestran pools de organizaciones verificadas por el contrato Registry.</p>
+    </div>
+
+    <div id="pools-skeleton" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 fade-in delay-300">
+      <div class="skeleton h-72 rounded-2xl"></div>
+      <div class="skeleton h-72 rounded-2xl"></div>
+      <div class="skeleton h-72 rounded-2xl"></div>
+    </div>
+
+    <div id="pools-empty" class="hidden card p-16 text-center">
+      <div class="text-5xl mb-4">🔭</div>
+      <h3 class="text-xl font-semibold text-white mb-2">No hay pools activas</h3>
+      <p class="text-zinc-400 text-sm">Las fundaciones verificadas aparecerán aquí. Conecta tu wallet para explorar.</p>
+    </div>
+
+    <div id="pools-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 hidden fade-in delay-300"></div>
+
+    <!-- Live feed de actividad -->
+    <div class="mt-10 fade-in delay-400">
+      <h2 class="text-lg font-bold text-white mb-4">⚡ Transacciones en vivo</h2>
+      <div class="card p-4">
+        <div id="live-feed" class="flex flex-col gap-3 max-h-72 overflow-y-auto">
+          <div class="flex items-center gap-3 text-sm text-zinc-500 py-2">
+            <div class="w-2 h-2 rounded-full bg-zinc-700 animate-pulse"></div>
+            <span>Escuchando la blockchain...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <canvas id="confetti-canvas" class="fixed inset-0 pointer-events-none z-40 hidden"></canvas>
+
+  <style>
+    .stat-card  { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 14px; padding: 16px; }
+    .stat-label { font-size: 11px; color: #71717a; margin-bottom: 4px; }
+    .stat-value { font-size: 24px; font-weight: 700; color: #ffffff; }
+    .pool-card  { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 20px; padding: 24px; transition: all 0.25s; cursor: pointer; }
+    .pool-card:hover { border-color: rgba(131,110,249,0.5); transform: translateY(-2px); box-shadow: 0 0 30px rgba(131,110,249,0.1); }
+    .lb-row { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 10px; background: rgba(255,255,255,0.02); }
+    .lb-rank { font-size: 18px; width: 28px; text-align: center; flex-shrink: 0; }
+    .lb-address { font-family: monospace; font-size: 13px; color: #d4d4d8; flex: 1; }
+    .lb-amount  { font-size: 13px; font-weight: 700; color: #836ef9; }
+    .live-item  { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .live-item:last-child { border-bottom: none; }
+    .live-dot   { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; animation: ping 1s cubic-bezier(0,0,.2,1) 1; }
+    @keyframes ping { 0% { transform: scale(1); } 75%,100% { transform: scale(2); opacity: 0; } }
+  </style>
+
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/wallet.js"></script>
+  <script>
+    // ─── Estado global ─────────────────────────────────────────────────────────
+    let userAddress = null;
+    let allPoolsData = [];
+    let currentDetailPool = null;
+    let currentMatchingPool = null;
+
+    // ─── Init ──────────────────────────────────────────────────────────────────
+    (async () => {
+      // Auto-connect silencioso
+      const session = await tryAutoConnect();
+      if (session) {
+        userAddress = session.address;
+        updateWalletUI(userAddress);
+      }
+      await loadExplorer();
+      startGlobalListener();
+
+      // Abrir pool desde URL si viene con ?pool=0x...
+      const params = new URLSearchParams(window.location.search);
+      const poolParam = params.get("pool");
+      if (poolParam && ethers.utils.isAddress(poolParam)) {
+        openPoolDetail(poolParam);
+      }
+    })();
+
+    // ─── Conectar wallet ───────────────────────────────────────────────────────
+    document.getElementById("btn-connect").addEventListener("click", async () => {
+      try {
+        showLoader("Conectando wallet...");
+        const { address } = await connectWallet();
+        userAddress = address;
+        updateWalletUI(address);
+        hideLoader();
+        showToast("Wallet conectada", "success");
+      } catch (e) {
+        hideLoader();
+        showToast(e.message || "Error al conectar", "error");
+      }
+    });
+
+    document.getElementById("btn-refresh").addEventListener("click", loadExplorer);
+
+    // ─── Carga principal ───────────────────────────────────────────────────────
+    async function loadExplorer() {
+      document.getElementById("pools-skeleton").classList.remove("hidden");
+      document.getElementById("pools-grid").classList.add("hidden");
+      document.getElementById("pools-empty").classList.add("hidden");
+
+      try {
+        const contracts = getContracts();
+        if (!contracts) {
+          document.getElementById("pools-skeleton").classList.add("hidden");
+          document.getElementById("pools-empty").classList.remove("hidden");
+          return;
+        }
+
+        // Cargar en paralelo
+        const [foundationAddrs, sbtCount] = await Promise.all([
+          contracts.factory.getFoundationPools(),
+          contracts.sbt.totalSupply(),
+        ]);
+
+        document.getElementById("g-sbts").textContent = sbtCount.toString();
+
+        if (foundationAddrs.length === 0) {
+          document.getElementById("pools-skeleton").classList.add("hidden");
+          document.getElementById("pools-empty").classList.remove("hidden");
+          document.getElementById("g-foundation-pools").textContent = "0";
+          return;
+        }
+
+        // Cargar datos de cada pool
+        allPoolsData = [];
+        let totalRaised = ethers.BigNumber.from(0);
+        const allDonors = new Map(); // address → total donated
+
+        for (const addr of foundationAddrs) {
+          try {
+            const pool = getPool(addr);
+            const [name, description, status, goalBN, deadlineBN, raisedBN, matchingBN, donors] = await Promise.all([
+              pool.name(), pool.description(), pool.status(),
+              pool.goalAmount(), pool.deadline(), pool.totalRaised(),
+              pool.matchingPool(), pool.getDonors()
+            ]);
+
+            // Recopilar montos por donante
+            for (const d of donors) {
+              const contrib = await pool.contributions(d);
+              const prev = allDonors.get(d.toLowerCase()) || ethers.BigNumber.from(0);
+              allDonors.set(d.toLowerCase(), prev.add(contrib));
+            }
+
+            const raisedF  = parseFloat(ethers.utils.formatEther(raisedBN));
+            const goalF    = parseFloat(ethers.utils.formatEther(goalBN));
+            const pct      = Math.min(100, goalF > 0 ? Math.round((raisedF / goalF) * 100) : 0);
+            const deadline = parseInt(deadlineBN.toString());
+            const statusN  = parseInt(status.toString());
+            const matching = parseFloat(ethers.utils.formatEther(matchingBN));
+
+            totalRaised = totalRaised.add(raisedBN);
+
+            allPoolsData.push({ addr, name, description, status: statusN, goalF, raisedF, pct, deadline, donors: donors.length, matching });
+          } catch {}
+        }
+
+        document.getElementById("g-foundation-pools").textContent = allPoolsData.length;
+        document.getElementById("g-total-raised").textContent =
+          parseFloat(ethers.utils.formatEther(totalRaised)).toFixed(3) + " MON";
+        document.getElementById("g-donors").textContent = allDonors.size;
+
+        // Render leaderboard global
+        renderLeaderboard(allDonors);
+
+        // Render pools
+        renderPools(allPoolsData);
+
+        // Listeners en tiempo real
+        startPoolListeners(foundationAddrs);
+
+      } catch (e) {
+        document.getElementById("pools-skeleton").classList.add("hidden");
+        document.getElementById("pools-empty").classList.remove("hidden");
+        showToast("Error cargando explorer: " + e.message, "error");
+      }
+    }
+
+    // ─── Render pools ──────────────────────────────────────────────────────────
+    function renderPools(data) {
+      const search  = document.getElementById("search-input").value.toLowerCase();
+      const status  = document.getElementById("filter-status").value;
+      const sort    = document.getElementById("filter-sort").value;
+
+      let filtered = data.filter(p => {
+        const matchSearch = !search || p.name.toLowerCase().includes(search) || p.description.toLowerCase().includes(search);
+        const matchStatus = status === "all" || p.status === parseInt(status);
+        return matchSearch && matchStatus;
+      });
+
+      if (sort === "raised")   filtered.sort((a,b) => b.raisedF - a.raisedF);
+      if (sort === "pct")      filtered.sort((a,b) => b.pct - a.pct);
+      if (sort === "deadline") filtered.sort((a,b) => a.deadline - b.deadline);
+
+      document.getElementById("pools-skeleton").classList.add("hidden");
+      const grid = document.getElementById("pools-grid");
+
+      if (filtered.length === 0) {
+        grid.classList.add("hidden");
+        document.getElementById("pools-empty").classList.remove("hidden");
+        return;
+      }
+
+      document.getElementById("pools-empty").classList.add("hidden");
+      grid.classList.remove("hidden");
+      grid.innerHTML = filtered.map(p => poolCardHTML(p)).join("");
+    }
+
+    function poolCardHTML(p) {
+      const statusInfo = getStatusInfo(p.status);
+      const tl = timeLeft(p.deadline);
+      const matchTag = p.matching > 0
+        ? `<span class="badge-sbt text-xs px-2 py-0.5 ml-1">⚡ Matching x2</span>` : "";
+
+      return `
+        <div class="pool-card fade-in" onclick="openPoolDetail('${p.addr}')">
+          <div class="flex items-start justify-between mb-3">
+            <div>
+              <div class="flex items-center gap-1 flex-wrap mb-1">
+                <span class="badge-foundation text-xs px-2 py-0.5">🏛️ Fundación</span>
+                <span class="${statusInfo.cls} text-xs px-2 py-0.5">${statusInfo.label}</span>
+                ${matchTag}
+              </div>
+              <h3 class="font-bold text-white text-lg leading-tight">${escapeHtml(p.name)}</h3>
+            </div>
+          </div>
+
+          <p class="text-sm text-zinc-400 mb-4 line-clamp-2">${escapeHtml(p.description)}</p>
+
+          <div class="mb-3">
+            <div class="flex justify-between text-xs text-zinc-400 mb-1.5">
+              <span class="font-semibold text-white">${p.raisedF.toFixed(3)} MON</span>
+              <span>${p.pct}%</span>
+            </div>
+            <div class="progress-track h-2">
+              <div class="progress-fill" style="width:${p.pct}%"></div>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between text-xs text-zinc-500">
+            <span>🎯 Meta: ${p.goalF} MON</span>
+            <span>⏱ ${tl}</span>
+          </div>
+
+          <div class="flex items-center justify-between text-xs text-zinc-500 mt-1">
+            <span>👥 ${p.donors} donantes</span>
+            ${p.matching > 0 ? `<span class="text-monad-accent2">⚡ ${p.matching.toFixed(3)} MON matching</span>` : ""}
+          </div>
+
+          <div class="mt-4 pt-4 border-t border-white/5 flex gap-2">
+            <button class="btn-primary px-4 py-2 text-xs flex-1"
+              onclick="event.stopPropagation(); openPoolDetail('${p.addr}')">
+              💜 Donar
+            </button>
+            <button class="btn-secondary px-3 py-2 text-xs"
+              onclick="event.stopPropagation(); openMatchingModal('${p.addr}')" title="Añadir matching">
+              ⚡
+            </button>
+            <a href="${MONAD_EXPLORER_URL}/address/${p.addr}" target="_blank"
+               class="btn-secondary px-3 py-2 text-xs" onclick="event.stopPropagation()">
+              🔍
+            </a>
+          </div>
+        </div>`;
+    }
+
+    function getStatusInfo(s) {
+      return {
+        0: { cls: "badge-active",  label: "🟢 Activa"   },
+        1: { cls: "badge-reached", label: "🎯 Meta!"    },
+        2: { cls: "badge-expired", label: "⌛ Expirada" },
+        3: { cls: "badge-expired", label: "❌ Cancelada"},
+      }[s] || { cls: "badge-active", label: "Activa" };
+    }
+
+    // ─── Leaderboard global ────────────────────────────────────────────────────
+    function renderLeaderboard(donorsMap) {
+      const sorted = [...donorsMap.entries()]
+        .sort((a, b) => (b[1].gt(a[1]) ? 1 : -1))
+        .slice(0, 5);
+
+      const medals = ["🥇","🥈","🥉","4️⃣","5️⃣"];
+      const lb = document.getElementById("global-leaderboard");
+
+      if (sorted.length === 0) {
+        lb.innerHTML = `<p class="text-zinc-500 text-sm text-center py-4">No hay donantes aún.</p>`;
+        return;
+      }
+
+      lb.innerHTML = sorted.map(([addr, amount], i) => `
+        <div class="lb-row">
+          <span class="lb-rank">${medals[i]}</span>
+          <span class="lb-address">${shortenAddress(addr)}</span>
+          <span class="lb-amount">${parseFloat(ethers.utils.formatEther(amount)).toFixed(4)} MON</span>
+          <a href="${MONAD_EXPLORER_URL}/address/${addr}" target="_blank"
+             class="text-zinc-600 hover:text-monad-accent text-xs">↗</a>
+        </div>`).join("");
+    }
+
+    // ─── Modal Detalle de Pool ─────────────────────────────────────────────────
+    window.openPoolDetail = async (addr) => {
+      currentDetailPool = addr;
+      document.getElementById("modal-pool-detail").classList.remove("hidden");
+
+      // Limpiar y mostrar loading
+      document.getElementById("detail-name").textContent = "Cargando...";
+      document.getElementById("detail-description").textContent = "";
+
+      try {
+        const pool = getPool(addr);
+        const [name, description, status, goalBN, deadlineBN, raisedBN, matchingBN, donors] = await Promise.all([
+          pool.name(), pool.description(), pool.status(),
+          pool.goalAmount(), pool.deadline(), pool.totalRaised(),
+          pool.matchingPool(), pool.getDonors()
+        ]);
+
+        const raisedF = parseFloat(ethers.utils.formatEther(raisedBN));
+        const goalF   = parseFloat(ethers.utils.formatEther(goalBN));
+        const pct     = Math.min(100, goalF > 0 ? Math.round((raisedF / goalF) * 100) : 0);
+        const deadline= parseInt(deadlineBN.toString());
+        const statusN = parseInt(status.toString());
+        const statusInfo = getStatusInfo(statusN);
+        const matching = parseFloat(ethers.utils.formatEther(matchingBN));
+
+        document.getElementById("detail-name").textContent = name;
+        document.getElementById("detail-description").textContent = description;
+        document.getElementById("detail-creator").textContent = `Pool: ${addr}`;
+        document.getElementById("detail-raised-label").textContent = `${raisedF.toFixed(4)} MON recaudado`;
+        document.getElementById("detail-pct").textContent = `${pct}%`;
+        document.getElementById("detail-progress-fill").style.width = `${pct}%`;
+        document.getElementById("detail-goal-label").textContent = `Meta: ${goalF} MON`;
+        document.getElementById("detail-deadline-label").textContent = timeLeft(deadline);
+        document.getElementById("detail-donors").textContent = donors.length;
+        document.getElementById("detail-matching").textContent = matching.toFixed(3);
+        document.getElementById("detail-explorer-link").href = `${MONAD_EXPLORER_URL}/address/${addr}`;
+
+        const badgesEl = document.getElementById("detail-badges");
+        badgesEl.innerHTML = `<span class="badge-foundation text-xs px-2 py-0.5">🏛️ Fundación Verificada</span>
+          <span class="${statusInfo.cls} text-xs px-2 py-0.5">${statusInfo.label}</span>
+          ${matching > 0 ? '<span class="badge-sbt text-xs px-2 py-0.5">⚡ Matching activo</span>' : ''}`;
+
+        // SBTs emitidos para esta pool (aproximación: totalSupply del SBT)
+        try {
+          const contracts = getContracts();
+          const sbtTotal = await contracts.sbt.totalSupply();
+          document.getElementById("detail-sbts").textContent = sbtTotal.toString();
+        } catch { document.getElementById("detail-sbts").textContent = "—"; }
+
+        // Leaderboard de esta pool
+        const lbEl = document.getElementById("detail-leaderboard");
+        if (donors.length === 0) {
+          lbEl.innerHTML = `<p class="text-zinc-500 text-xs">Sé el primero en donar.</p>`;
+        } else {
+          const medals = ["🥇","🥈","🥉","4️⃣","5️⃣"];
+          const contribs = await Promise.all(
+            donors.slice(0, 5).map(async (d) => {
+              try { const c = await pool.contributions(d); return [d, c]; } catch { return [d, ethers.BigNumber.from(0)]; }
+            })
+          );
+          contribs.sort((a,b) => b[1].gt(a[1]) ? 1 : -1);
+          lbEl.innerHTML = contribs.map(([d, c], i) => `
+            <div class="lb-row">
+              <span class="lb-rank">${medals[i] || (i+1)}</span>
+              <span class="lb-address">${shortenAddress(d)}</span>
+              <span class="lb-amount">${parseFloat(ethers.utils.formatEther(c)).toFixed(4)} MON</span>
+            </div>`).join("");
+        }
+
+        // Mostrar/ocultar donate según wallet
+        if (!userAddress) {
+          document.getElementById("detail-donate-warning").classList.remove("hidden");
+        } else {
+          document.getElementById("detail-donate-warning").classList.add("hidden");
+        }
+
+      } catch (e) {
+        document.getElementById("detail-name").textContent = "Error cargando pool";
+        showToast("Error: " + e.message, "error");
+      }
+    };
+
+    document.getElementById("btn-close-detail").addEventListener("click", () => {
+      document.getElementById("modal-pool-detail").classList.add("hidden");
+    });
+
+    document.getElementById("detail-share-btn").addEventListener("click", () => {
+      const url = `${window.location.origin}/explorer.html?pool=${currentDetailPool}`;
+      navigator.clipboard.writeText(url);
+      showToast("Enlace copiado", "success");
+    });
+
+    // Quick amounts en detail
+    document.querySelectorAll(".quick-detail").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.getElementById("detail-amount").value = btn.dataset.val;
+        document.getElementById("detail-zero-warn").classList.add("hidden");
+      });
+    });
+
+    document.getElementById("detail-amount").addEventListener("input", (e) => {
+      const val = parseFloat(e.target.value);
+      document.getElementById("detail-zero-warn").classList.toggle("hidden", !(val <= 0 && e.target.value !== ""));
+    });
+
+    // Donación desde el modal de detalle
+    document.getElementById("detail-donate-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      if (!userAddress) {
+        showToast("Conecta tu wallet primero", "warning");
+        return;
+      }
+
+      const amountStr = document.getElementById("detail-amount").value;
+      const amount    = parseFloat(amountStr);
+
+      if (!amount || amount <= 0) {
+        document.getElementById("detail-zero-warn").classList.remove("hidden");
+        return showToast("⚠️ El monto debe ser mayor a 0 MON", "warning");
+      }
+
+      try {
+        showLoader("Confirmando donación...");
+        const pool     = getPool(currentDetailPool);
+        const amountWei = ethers.utils.parseEther(amountStr);
+        const tx       = await pool.deposit({ value: amountWei });
+
+        showLoader("Esperando confirmación on-chain...");
+        await tx.wait();
+
+        hideLoader();
+        document.getElementById("modal-pool-detail").classList.add("hidden");
+        showToast("🎉 ¡Donación confirmada! Badge SBT acuñado.", "success");
+        launchConfetti();
+        await loadExplorer();
+      } catch (e) {
+        hideLoader();
+        showToast(e.reason || e.message || "Error en la donación", "error");
+      }
+    });
+
+    // ─── Modal Matching ───────────────────────────────────────────────────────
+    window.openMatchingModal = (addr) => {
+      currentMatchingPool = addr;
+      document.getElementById("modal-matching").classList.remove("hidden");
+    };
+
+    document.getElementById("btn-close-matching").addEventListener("click", () => {
+      document.getElementById("modal-matching").classList.add("hidden");
+    });
+
+    document.getElementById("matching-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (!userAddress) return showToast("Conecta tu wallet", "warning");
+
+      const amount = document.getElementById("matching-amount").value;
+      if (!amount || parseFloat(amount) <= 0) return showToast("Monto inválido", "error");
+
+      try {
+        showLoader("Depositando matching...");
+        const pool = getPool(currentMatchingPool);
+        const tx   = await pool.depositMatching({ value: ethers.utils.parseEther(amount) });
+        await tx.wait();
+        hideLoader();
+        document.getElementById("modal-matching").classList.add("hidden");
+        showToast("⚡ Matching depositado. Cada donación se duplicará.", "success");
+        await loadExplorer();
+      } catch (e) {
+        hideLoader();
+        showToast(e.reason || e.message || "Error", "error");
+      }
+    });
+
+    // ─── Filtros y búsqueda ───────────────────────────────────────────────────
+    ["search-input","filter-status","filter-sort"].forEach(id => {
+      document.getElementById(id).addEventListener("input", () => renderPools(allPoolsData));
+      document.getElementById(id).addEventListener("change", () => renderPools(allPoolsData));
+    });
+
+    // ─── Live listener global ──────────────────────────────────────────────────
+    async function startGlobalListener() {
+      try {
+        const contracts = getContracts();
+        if (!contracts) return;
+
+        contracts.factory.on("PoolCreated", (poolAddr, creator, pType, name, goal, deadline, ts) => {
+          addLiveEvent({
+            icon: "🎯",
+            color: "bg-monad-accent",
+            text: `Nueva pool creada: "${name}" por ${shortenAddress(creator)}`,
+          });
+          loadExplorer();
+        });
+
+        contracts.sbt.on("ParticipationMinted", (donor, pool, tokenId, ts) => {
+          addLiveEvent({
+            icon: "🏆",
+            color: "bg-yellow-500",
+            text: `Badge SBT #${tokenId} acuñado para ${shortenAddress(donor)}`,
+          });
+        });
+      } catch {}
+    }
+
+    function startPoolListeners(addrs) {
+      for (const addr of addrs.slice(0, 10)) {
+        try {
+          const pool = getPool(addr);
+          pool.on("Deposited", (poolAddr, donor, amount, total, ts) => {
+            addLiveEvent({
+              icon: "💜",
+              color: "bg-monad-accent",
+              text: `Donación de ${formatMON(amount)} por ${shortenAddress(donor)}`,
+              link: `${MONAD_EXPLORER_URL}/address/${poolAddr}`,
+            });
+          });
+          pool.on("GoalReached", (total, ts) => {
+            addLiveEvent({
+              icon: "🎉",
+              color: "bg-monad-green",
+              text: `¡Meta alcanzada! ${formatMON(total)} recaudados`,
+            });
+            launchConfetti();
+          });
+          pool.on("FundsReleased", (beneficiary, amount, ts) => {
+            addLiveEvent({
+              icon: "🏦",
+              color: "bg-monad-accent2",
+              text: `Fondos enviados: ${formatMON(amount)} → ${shortenAddress(beneficiary)}`,
+            });
+          });
+        } catch {}
+      }
+    }
+
+    function addLiveEvent(item) {
+      const feed = document.getElementById("live-feed");
+      const waiting = feed.querySelector(".text-zinc-500");
+      if (waiting) waiting.closest("div")?.remove();
+
+      const now = new Date().toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+      const el = document.createElement("div");
+      el.className = "live-item";
+      el.innerHTML = `
+        <div class="live-dot ${item.color}"></div>
+        <div class="flex-1">
+          <p class="text-sm text-zinc-200">${item.icon} ${item.text}</p>
+          <p class="text-xs text-zinc-600">${now}</p>
+        </div>
+        ${item.link ? `<a href="${item.link}" target="_blank" class="text-zinc-600 hover:text-monad-accent text-xs flex-shrink-0">↗</a>` : ""}`;
+      feed.prepend(el);
+      if (feed.children.length > 20) feed.lastChild?.remove();
+    }
+
+    // ─── Utils ────────────────────────────────────────────────────────────────
+    function escapeHtml(s) {
+      return String(s)
+        .replace(/&/g,"&amp;").replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+    }
+  </script>
+</body>
+</html>
