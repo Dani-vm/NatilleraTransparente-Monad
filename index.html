@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Natillera Transparente Web3</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              monad: {
+                bg: "#0F0F13",
+                card: "#1A1A22",
+                accent: "#8353E2",
+              },
+            },
+            fontFamily: {
+              sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+            },
+            boxShadow: {
+              glow: "0 0 40px rgba(131, 83, 226, 0.25)",
+            },
+          },
+        },
+      };
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="min-h-screen bg-monad-bg font-sans text-zinc-100 antialiased">
+    <div class="pointer-events-none fixed inset-0 overflow-hidden">
+      <div
+        class="absolute -top-32 left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-monad-accent/20 blur-3xl"
+      ></div>
+    </div>
+
+    <main class="relative mx-auto flex min-h-screen max-w-xl flex-col justify-center px-4 py-12">
+      <header class="mb-8 flex flex-col items-center gap-5 text-center sm:flex-row sm:justify-between sm:text-left">
+        <div>
+          <p class="mb-1 text-xs font-medium uppercase tracking-[0.2em] text-monad-accent">
+            Monad · Web3
+          </p>
+          <h1 class="text-2xl font-bold tracking-tight sm:text-3xl">
+            Natillera Transparente Web3
+          </h1>
+        </div>
+        <button
+          id="btn-connect"
+          type="button"
+          class="rounded-2xl bg-monad-accent px-5 py-2.5 text-sm font-semibold text-white shadow-glow transition hover:bg-[#7346d4] focus:outline-none focus:ring-2 focus:ring-monad-accent/60"
+        >
+          Conectar MetaMask
+        </button>
+      </header>
+
+      <section class="space-y-5 rounded-3xl border border-white/5 bg-monad-card p-6 shadow-glow sm:p-8">
+        <div>
+          <p class="mb-2 text-sm font-medium text-zinc-400">Dirección conectada</p>
+          <div
+            id="user-address"
+            class="truncate rounded-2xl border border-white/10 bg-[#121218] px-4 py-3 font-mono text-sm text-zinc-300"
+          >
+            No conectada
+          </div>
+        </div>
+
+        <div>
+          <div class="mb-2 flex items-center justify-between text-sm">
+            <span class="font-medium text-zinc-400">Avance del recaudo</span>
+            <span id="progress-label" class="font-semibold text-monad-accent">0.00 / 1.00 MON</span>
+          </div>
+          <div class="h-3 overflow-hidden rounded-full bg-[#121218]">
+            <div
+              id="progress-bar"
+              class="h-full w-0 rounded-full bg-monad-accent transition-all duration-500"
+              role="progressbar"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              aria-valuenow="0"
+            ></div>
+          </div>
+        </div>
+
+        <div class="space-y-3">
+          <label for="input-amount" class="block text-sm font-medium text-zinc-400">
+            Monto a aportar (MON)
+          </label>
+          <input
+            id="input-amount"
+            type="text"
+            inputmode="decimal"
+            placeholder="0.10"
+            class="w-full rounded-2xl border border-white/10 bg-[#121218] px-4 py-3 text-sm text-white placeholder:text-zinc-500 focus:border-monad-accent focus:outline-none focus:ring-2 focus:ring-monad-accent/40"
+          />
+          <button
+            id="btn-deposit"
+            type="button"
+            class="w-full rounded-2xl bg-monad-accent px-5 py-3 text-sm font-semibold text-white shadow-glow transition hover:bg-[#7346d4] focus:outline-none focus:ring-2 focus:ring-monad-accent/60"
+          >
+            Aportar a la Natillera
+          </button>
+          <button
+            id="btn-refund"
+            type="button"
+            class="w-full rounded-2xl border border-white/10 bg-transparent px-5 py-3 text-sm font-semibold text-zinc-200 transition hover:border-monad-accent/50 hover:text-white focus:outline-none focus:ring-2 focus:ring-monad-accent/40"
+          >
+            Reclamar Reembolso
+          </button>
+        </div>
+
+        <p id="status-msg" class="text-center text-xs text-zinc-400 mt-2 h-4"></p>
+      </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+    <script>
+      const contractAddress = "0xa219eb817a7fc874c5F13Ae94fED9314d1D9A0a6";
+      const contractABI = [
+        "function aportar() external payable",
+        "function reclamarReembolso() external",
+        "function totalRecaudado() public view returns (uint256)",
+        "function metaMonto() public view returns (uint256)"
+      ];
+
+      let provider = null;
+      let signer = null;
+      let contract = null;
+
+      function recortarDireccion(address) {
+        return address.slice(0, 6) + "..." + address.slice(-4);
+      }
+
+      async function refreshData() {
+        if (!contract) return;
+        try {
+          const totalRaw = await contract.totalRecaudado();
+          const metaRaw = await contract.metaMonto();
+
+          const totalFormatted = parseFloat(ethers.utils.formatEther(totalRaw)).toFixed(2);
+          const metaFormatted = parseFloat(ethers.utils.formatEther(metaRaw)).toFixed(2);
+          
+          let percent = 0;
+          if (parseFloat(metaFormatted) > 0) {
+            percent = Math.min(Math.round((totalFormatted / metaFormatted) * 100), 100);
+          }
+
+          document.getElementById("progress-label").textContent = `${totalFormatted} / ${metaFormatted} MON`;
+          
+          const progressBar = document.getElementById("progress-bar");
+          progressBar.style.width = `${percent}%`;
+          progressBar.setAttribute("aria-valuenow", percent);
+        } catch (error) {
+          console.error("Error al actualizar datos:", error);
+        }
+      }
+
+      document.getElementById("btn-connect").addEventListener("click", async function () {
+        try {
+          if (!window.ethereum) {
+            alert("MetaMask no está instalado");
+            return;
+          }
+
+          const accounts = await window.ethereum.request({
+            method: "eth_requestAccounts",
+          });
+          const account = accounts[0];
+          document.getElementById("user-address").textContent = recortarDireccion(account);
+
+          // Poner "any" evita el error de soporte ENS en la red Monad
+          provider = new ethers.providers.Web3Provider(window.ethereum, "any");
+          signer = provider.getSigner();
+          contract = new ethers.Contract(contractAddress, contractABI, signer);
+
+          document.getElementById("btn-connect").textContent = "Conectado";
+          
+          // Cargar los datos automáticamente al conectar
+          await refreshData();
+        } catch (error) {
+          alert(error.message || "Error al conectar MetaMask");
+        }
+      });
+
+      document.getElementById("btn-deposit").addEventListener("click", async function () {
+        const statusMsg = document.getElementById("status-msg");
+        try {
+          if (!window.ethereum) {
+            alert("MetaMask no está instalado");
+            return;
+          }
+
+          if (!contract) {
+            alert("Conecta MetaMask primero");
+            return;
+          }
+
+          const amount = document.getElementById("input-amount").value;
+          if (!amount || parseFloat(amount) <= 0) {
+            alert("Ingresa un monto válido a aportar");
+            return;
+          }
+
+          if (statusMsg) statusMsg.textContent = "Procesando transacción en Monad...";
+
+          const tx = await contract.aportar({
+            value: ethers.utils.parseEther(amount),
+          });
+          await tx.wait();
+
+          if (statusMsg) statusMsg.textContent = "¡Aporte realizado con éxito!";
+          document.getElementById("input-amount").value = "";
+          
+          // Actualizar la barra de progreso en tiempo real
+          await refreshData();
+        } catch (error) {
+          if (statusMsg) statusMsg.textContent = "";
+          alert(error.message || "Error al aportar");
+        }
+      });
+
+      document.getElementById("btn-refund").addEventListener("click", async function () {
+        const statusMsg = document.getElementById("status-msg");
+        try {
+          if (!contract) {
+            alert("Conecta MetaMask primero");
+            return;
+          }
+
+          if (statusMsg) statusMsg.textContent = "Solicitando reembolso...";
+
+          const tx = await contract.reclamarReembolso();
+          await tx.wait();
+
+          if (statusMsg) statusMsg.textContent = "¡Reembolso procesado con éxito!";
+          await refreshData();
+        } catch (error) {
+          if (statusMsg) statusMsg.textContent = "";
+          alert(error.message || "No se pudo procesar el reembolso");
+        }
+      });
+    </script>
+  </body>
+</html>
