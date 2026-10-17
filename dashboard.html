@@ -444,10 +444,15 @@
         for (const addr of poolAddrs) {
           try {
             const pool = getPool(addr);
-            const [name, description, pType, status, goalBN, deadlineBN, raised, donors] = await Promise.all([
-              pool.name(), pool.description(), pool.poolType(), pool.status(),
-              pool.goalAmount(), pool.deadline(), pool.totalRaised(), pool.getDonors()
-            ]);
+            // Llamadas secuenciales con pausa para no saturar el RPC
+            const name        = await pool.name();
+            const description = await pool.description();
+            const pType       = await pool.poolType();
+            const status      = await pool.status();
+            const goalBN      = await pool.goalAmount();
+            const deadlineBN  = await pool.deadline();
+            const raised      = await pool.totalRaised();
+            const donors      = await pool.getDonors();
 
             totalRaised = totalRaised.add(raised);
             donors.forEach(d => allDonors.add(d.toLowerCase()));
@@ -485,10 +490,17 @@
                   </div>
                 </div>
                 <div class="flex gap-2 flex-wrap">
+                  ${statusN !== 1 && statusN !== 2 && statusN !== 3 ? `
                   <button class="btn-primary px-3 py-1.5 text-xs"
                     onclick="openDonateModal('${addr}', '${escapeHtml(name)}', '${raisedF}', '${goal}', '${pct}')">
                     💜 Donar
-                  </button>
+                  </button>` : ''}
+                  ${pTypeN === POOL_TYPE.INDIVIDUAL && (statusN === 1 || (statusN === 0 && parseInt(deadlineBN.toString()) < Math.floor(Date.now()/1000)) || statusN === 2) ? `
+                  <button class="btn-primary px-3 py-1.5 text-xs"
+                    style="background:linear-gradient(135deg,#00e676,#00b0ff)"
+                    onclick="releaseFundsPool('${addr}')">
+                    💸 Desembolsar
+                  </button>` : ''}
                   ${pTypeN === POOL_TYPE.INDIVIDUAL ? `
                   <button class="btn-secondary px-3 py-1.5 text-xs"
                     onclick="openInviteModal('${addr}')">
@@ -860,6 +872,39 @@
     function escapeHtml(s) {
       return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
     }
+
+    // ─── Desembolsar fondos (INDIVIDUAL, solo creador, cuando meta alcanzada) ──
+    window.releaseFundsPool = async (addr) => {
+      try {
+        showLoader("Enviando fondos a tu wallet...");
+        const pool = getPool(addr);
+
+        // Verificar que hay balance antes de intentar
+        const balance = await getProvider().getBalance(addr);
+        if (balance.eq(0)) {
+          hideLoader();
+          return showToast("No hay fondos en esta pool para desembolsar.", "warning");
+        }
+
+        const tx = await pool.releaseFunds();
+        showLoader("Esperando confirmación on-chain...");
+        await tx.wait();
+
+        hideLoader();
+        showToast("💸 ¡Fondos desembolsados a tu wallet!", "success");
+        launchConfetti();
+        await loadMyPools();
+      } catch (e) {
+        hideLoader();
+        // Traducir errores comunes
+        const msg = e.reason || e.message || "";
+        if (msg.includes("Not creator"))       return showToast("Solo el creador puede desembolsar.", "error");
+        if (msg.includes("Already released"))  return showToast("Los fondos ya fueron desembolsados.", "warning");
+        if (msg.includes("Not releasable"))    return showToast("Aún no se puede desembolsar. Espera a que se alcance la meta o expire el plazo.", "warning");
+        if (msg.includes("Nothing to release"))return showToast("No hay fondos en la pool.", "warning");
+        showToast(msg || "Error al desembolsar", "error");
+      }
+    };
   </script>
 </body>
 </html>

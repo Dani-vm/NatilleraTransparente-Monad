@@ -328,6 +328,9 @@
 
     document.getElementById("btn-refresh").addEventListener("click", loadExplorer);
 
+    // Helper: pausa para no saturar el RPC
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
     // ─── Carga principal ───────────────────────────────────────────────────────
     async function loadExplorer() {
       document.getElementById("pools-skeleton").classList.remove("hidden");
@@ -342,13 +345,17 @@
           return;
         }
 
-        // Cargar en paralelo
-        const [foundationAddrs, sbtCount] = await Promise.all([
-          contracts.factory.getFoundationPools(),
-          contracts.sbt.totalSupply(),
-        ]);
+        // Cargar de forma secuencial para no saturar el RPC
+        let foundationAddrs, sbtCount;
+        try {
+          foundationAddrs = await contracts.factory.getFoundationPools();
+        } catch { foundationAddrs = []; }
+        try {
+          sbtCount = await contracts.sbt.totalSupply();
+          document.getElementById("g-sbts").textContent = sbtCount.toString();
+        } catch { document.getElementById("g-sbts").textContent = "—"; }
 
-        document.getElementById("g-sbts").textContent = sbtCount.toString();
+        await sleep(300);
 
         if (foundationAddrs.length === 0) {
           document.getElementById("pools-skeleton").classList.add("hidden");
@@ -357,27 +364,50 @@
           return;
         }
 
-        // Cargar datos de cada pool
+        // Cargar datos de cada pool con pausa entre cada una
         allPoolsData = [];
         let totalRaised = ethers.BigNumber.from(0);
-        const allDonors = new Map(); // address → total donated
+        const allDonors = new Map();
 
         for (const addr of foundationAddrs) {
           try {
             const pool = getPool(addr);
-            const [name, description, status, goalBN, deadlineBN, raisedBN, matchingBN, donors] = await Promise.all([
-              pool.name(), pool.description(), pool.status(),
-              pool.goalAmount(), pool.deadline(), pool.totalRaised(),
-              pool.matchingPool(), pool.getDonors()
-            ]);
+            // Llamadas secuenciales con pausa para evitar rate limit
+            const name        = await pool.name();        await sleep(100);
+            const description = await pool.description(); await sleep(100);
+            const status      = await pool.status();      await sleep(100);
+            const goalBN      = await pool.goalAmount();  await sleep(100);
+            const deadlineBN  = await pool.deadline();    await sleep(100);
+            const raisedBN    = await pool.totalRaised(); await sleep(100);
+            const matchingBN  = await pool.matchingPool();await sleep(100);
+            const donors      = await pool.getDonors();   await sleep(200);
 
-            // Recopilar montos por donante
-            for (const d of donors) {
-              const contrib = await pool.contributions(d);
-              const prev = allDonors.get(d.toLowerCase()) || ethers.BigNumber.from(0);
-              allDonors.set(d.toLowerCase(), prev.add(contrib));
+            // Solo leer contribuciones si hay pocos donantes
+            if (donors.length <= 5) {
+              for (const d of donors) {
+                try {
+                  const contrib = await pool.contributions(d);
+                  const prev = allDonors.get(d.toLowerCase()) || ethers.BigNumber.from(0);
+                  allDonors.set(d.toLowerCase(), prev.add(contrib));
+                  await sleep(100);
+                } catch {}
+              }
             }
 
+            const raisedF  = parseFloat(ethers.utils.formatEther(raisedBN));
+            const goalF    = parseFloat(ethers.utils.formatEther(goalBN));
+            const pct      = Math.min(100, goalF > 0 ? Math.round((raisedF / goalF) * 100) : 0);
+            const deadline = parseInt(deadlineBN.toString());
+            const statusN  = parseInt(status.toString());
+            const matching = parseFloat(ethers.utils.formatEther(matchingBN));
+
+            totalRaised = totalRaised.add(raisedBN);
+
+            allPoolsData.push({ addr, name, description, status: statusN, goalF, raisedF, pct, deadline, donors: donors.length, matching });
+          } catch {}
+
+          await sleep(300); // pausa entre pools
+        }
             const raisedF  = parseFloat(ethers.utils.formatEther(raisedBN));
             const goalF    = parseFloat(ethers.utils.formatEther(goalBN));
             const pct      = Math.min(100, goalF > 0 ? Math.round((raisedF / goalF) * 100) : 0);

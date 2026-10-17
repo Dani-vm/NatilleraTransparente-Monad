@@ -205,8 +205,11 @@ contract NatilleraPool {
      */
     function claimRefund() external {
         require(poolType == PoolType.INDIVIDUAL, "Pool: Foundations do not refund");
-        require(block.timestamp >= deadline,     "Pool: Not expired yet");
-        require(status != PoolStatus.GOAL_REACHED || !fundsReleased, "Pool: Goal was reached");
+        require(
+            block.timestamp >= deadline || status == PoolStatus.CANCELLED,
+            "Pool: Not expired yet"
+        );
+        require(status != PoolStatus.GOAL_REACHED, "Pool: Goal was reached, no refunds");
         require(!fundsReleased,                  "Pool: Funds already released");
 
         uint256 amount = contributions[msg.sender];
@@ -265,10 +268,11 @@ contract NatilleraPool {
     }
 
     /**
-     * @notice Cancelar la pool (solo creador, solo si no se liberaron fondos).
+     * @notice Cancelar la pool (solo creador, solo si está activa y no se liberaron fondos).
      */
     function cancelPool() external onlyCreator {
-        require(!fundsReleased, "Pool: Already released");
+        require(status == PoolStatus.ACTIVE, "Pool: Not active");
+        require(!fundsReleased,              "Pool: Already released");
         status = PoolStatus.CANCELLED;
         emit PoolCancelled(block.timestamp);
     }
@@ -329,6 +333,7 @@ contract NatilleraPool {
     }
 
     receive() external payable {
-        // Recibir fondos sin datos (por si acaso)
+        // Solo acepta ETH directo en pools FOUNDATION para no perder fondos de matching
+        // En INDIVIDUAL este ETH no queda registrado como contribución
     }
 }

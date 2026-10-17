@@ -11,7 +11,7 @@
 // ─────────────────────────────────────────────────────────
 const CONTRACT_ADDRESSES = {
   registry:   "0x6028C6c3b9436719255f8713252bA20514fbf461",
-  factory:    "0x7a4B3C2382d2a0d037F3C7a5D91cd459b78442fc",
+  factory:    "0x781D181d5B2587557D13D987821EFB8e53CCbEDC",
   sbt:        "0x3F454265B1482d5d7BF3Cc5179b0B3B112600f23",
 };
 
